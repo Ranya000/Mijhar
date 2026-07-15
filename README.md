@@ -1,21 +1,20 @@
-# مجهر (Mijhar)
+# Mijhar
 
-**كاشف المخاطر للأفراد** — يحلّل عقود الإيجار والتمويل والاستثمار بست وكلاء ذكاء اصطناعي، ويكشف البنود الخطيرة قبل التوقيع.
+**Risk Detector for Individuals** — analyzes rental, financing, and investment contracts using six AI agents, and detects risky clauses before signing.
 
-## كيف يعمل
+## How It Works
 
-المستخدم يرفع نص العقد، وستة وكلاء ذكاء اصطناعي يحلّلونه:
-- كاشف المخاطر
-- مقارنة السوق
-- النظرة المستقبلية
-- كاشف البنود المخفية
-- الأثر المالي
-- وكيل الاعتراض
+The user uploads the contract text, and six AI agents analyze it:
+- Risk Detector
+- Market Comparison
+- Future Outlook
+- Hidden Clause Detector
+- Financial Impact
+- Objection Agent
 
-## هذا المستودع
+## This Repository
 
-الواجهة الأمامية (React) لثلاثة أنواع عقود:
- `RentalContract` · `FinancingContract` · `InvestmentContract`
+Frontend (React) for three contract types: `RentalContract` · `FinancingContract` · `InvestmentContract`
 
 ---
-جزء من مشروع مجهر — هاكاثون امد 2026
+Part of the Mijhar project — Amad Hackathon 2026
