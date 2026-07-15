@@ -14,7 +14,8 @@
 
 ## هذا المستودع
 
-الواجهة الأمامية (React) لثلاثة أنواع عقود: `RentalContract` · `FinancingContract` · `InvestmentContract`
+الواجهة الأمامية (React) لثلاثة أنواع عقود:
+ `RentalContract` · `FinancingContract` · `InvestmentContract`
 
 ---
 جزء من مشروع مجهر — هاكاثون امد 2026
