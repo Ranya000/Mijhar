@@ -1,0 +1,12 @@
+node_modules
+
+# أسرار — لا ترفعها أبداً
+.env
+.env.*
+!.env.example
+
+# نظام التشغيل والمحرر
+.DS_Store
+*.log
+npm-debug.log*
+.vscode/
