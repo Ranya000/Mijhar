@@ -8,6 +8,7 @@ const path = require("path");
 
 const { normalize, TYPE_LABEL } = require("./normalize");
 const { extractJson } = require("./json");
+const { analyzeAgents } = require("./agents");
 
 const MAX_TEXT = 60000;      // حرف — أطول من أي عقد استهلاكي واقعي
 const MIN_TEXT = 80;
@@ -80,6 +81,14 @@ async function analyze(client, model, type, text) {
   return normalize(type, raw);
 }
 
+/**
+ * التحليل عبر الوكلاء الستة المستقلين (المسار الافتراضي).
+ * غلاف رفيع حول المنسّق في agents.js — يوحّد التوقيع مع analyze().
+ */
+function analyzeWithAgents(client, model, type, text) {
+  return analyzeAgents(client, model, type, text);
+}
+
 /** يحوّل خطأ من SDK إلى رد HTTP منظّم. */
 function errorToResponse(err) {
   if (err.status === 401) return { status: 500, error: "مفتاح الـ API غير صالح." };
@@ -93,6 +102,7 @@ module.exports = {
   buildPrompt,
   validateInput,
   analyze,
+  analyzeWithAgents,
   errorToResponse,
   MAX_TEXT,
   MIN_TEXT,
