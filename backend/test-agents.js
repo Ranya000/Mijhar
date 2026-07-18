@@ -34,7 +34,8 @@ function makeClient(opts = {}) {
         const id = agent ? agent.id : "unknown";
         calls.push({ id, prompt });
         if (fail.has(id)) throw new Error(`mock fail ${id}`);
-        return { stop_reason: "end_turn", content: [{ type: "text", text: SLICES[id] || '"x":1}' }] };
+        // النموذج يرجّع كائن JSON كامل (القطع أدناه بلا القوس الأول، فنضيفه هنا)
+        return { stop_reason: "end_turn", content: [{ type: "text", text: "{" + (SLICES[id] || '"x":1}') }] };
       },
     },
   };

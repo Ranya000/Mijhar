@@ -60,12 +60,7 @@ async function analyze(client, model, type, text) {
   const res = await client.messages.create({
     model,
     max_tokens: 8000,
-    temperature: 0,
-    messages: [
-      { role: "user", content: prompt },
-      // حشو بداية الرد: يمنع النموذج من كتابة أي مقدمة قبل الـ JSON
-      { role: "assistant", content: "{" },
-    ],
+    messages: [{ role: "user", content: prompt }],
   });
 
   if (res.stop_reason === "max_tokens") {
@@ -77,7 +72,8 @@ async function analyze(client, model, type, text) {
     .map((b) => b.text)
     .join("");
 
-  const raw = extractJson("{" + body);
+  // extractJson يتحمّل أي مقدمة أو أسوار Markdown حول الكائن
+  const raw = extractJson(body);
   return normalize(type, raw);
 }
 

@@ -35,8 +35,8 @@ const DIRTY_BODY = JSON.stringify({
   risks: [{ text: "غرامة عالية", level: "red", original: "ثلاثة أشهر", translated: "مكلفة" }],
   objectionLetters: [{ source: "المادة (3)", issue: "تجديد", letter: "أطلب توضيح البند." }],
 });
-// نشيل القوس الأول عشان نحاكي الحشو
-const DIRTY_RENTAL = DIRTY_BODY.slice(1);
+// النموذج يرجّع كائن JSON كامل (بلا حشو رد المساعد)
+const DIRTY_RENTAL = DIRTY_BODY;
 
 (async () => {
   console.log("\n──────── canonicalType ────────");
@@ -94,10 +94,10 @@ const DIRTY_RENTAL = DIRTY_BODY.slice(1);
   } catch (e) { truncErr = /truncated/.test(e.message); }
   ok("رد مقطوع (max_tokens) يرمي خطأ واضح", truncErr);
 
-  // JSON ناقص القوس الأخير (مع الحشو يصير {"a":1 بلا إغلاق)
+  // JSON ناقص القوس الأخير (رد مكسور من النموذج)
   let brokenErr = false;
   try {
-    await analyze(mockClient('"a":1,"b":2'), "m", "rental", "نص طويل كفاية للتحليل هنا.");
+    await analyze(mockClient('{"a":1,"b":2'), "m", "rental", "نص طويل كفاية للتحليل هنا.");
   } catch { brokenErr = true; }
   ok("JSON بلا إغلاق يرمي خطأ", brokenErr);
 
@@ -110,8 +110,8 @@ const DIRTY_RENTAL = DIRTY_BODY.slice(1);
 
   console.log("\n──────── الأنواع الثلاثة تمر بالسلسلة ────────");
   for (const type of ["rental", "finance", "invest"]) {
-    // بدون القوس الأول — الباكند يحشوه
-    const minimalBody = '"safetyScore":60,"money":{},"risks":[],"marketComparison":[]}';
+    // كائن JSON كامل كما يرجعه النموذج
+    const minimalBody = '{"safetyScore":60,"money":{},"risks":[],"marketComparison":[]}';
     const out = await analyze(mockClient(minimalBody), "m", type, "نص عقد طويل كفاية للتحليل هنا.");
     ok(`type=${type}: contractType عربي وscenarios كائن`, /[\u0600-\u06FF]/.test(out.contractType) && !Array.isArray(out.exposure.scenarios), out.contractType);
   }
