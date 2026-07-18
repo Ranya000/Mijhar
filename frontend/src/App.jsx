@@ -1,13 +1,182 @@
-import { useState, useRef } from "react";
+
+import { useState, useRef, createContext, useContext } from "react";
+
+// ===================== ربط الباكند =====================
+// محلياً: اتركه فاضياً ويستخدم مساراً نسبياً (بروكسي Vite يحوّله للباكند).
+// عند النشر: حط VITE_API_URL في frontend/.env.local برابط الخادم الكامل.
+const API_URL = import.meta.env?.VITE_API_URL || "";
 
 /* =========================================================
    مجهر — كاشف المخاطر للأفراد
-   وحدة عقد التمويل (منفصلة — الباكند يربطها بباقي الوحدات)
-   نفس الوكلاء الستة، نتائج مختلفة لأن العقد مختلف
+   ٦ وكلاء أذكياء يحللون عقدك قبل التوقيع
+
+   ملف موحّد لثلاثة أنواع عقود: إيجار / تمويل / استثماري.
+   كل الفروق بين الأنواع محصورة في سجل CONTRACTS:
+     data      → بيانات التحليل الجاهزة
+     text      → نص العقد التجريبي
+     copy      → كل صياغة تختلف حسب نوع العقد
+     compute   → محرّك الحساب المالي الخاص بالنوع
+     Financial → اللوحة المالية الخاصة بالنوع
+     defaults  → الدخل/الالتزامات الافتراضية
+
+   باقي المكوّنات مشتركة، وتقرأ نصوص العقد الفعّال من ContractCtx.
+   ➕ لإضافة نوع عقد رابع: مدخل واحد في CONTRACTS (+ بياناته ودالته ولوحته).
    ========================================================= */
 
-// ===================== SAMPLE DATA (FINANCING) =====================
-const SAMPLE_ANALYSIS = {
+// ===================== بيانات العقود الثلاثة =====================
+const RENTAL_DATA = {
+  contractType: "عقد إيجار سكني",
+  safetyScore: 42,
+  safetyLevel: "yellow",
+  summary: "العقد يحتوي على بنود قياسية مع نقاط تحتاج انتباهك قبل التوقيع.",
+  // أرقام مالية مستخرجة من العقد (تُغذّي وكيل الأثر المالي)
+  money: {
+    monthlyRent: 3800,
+    depositMonths: 1,
+    annualIncrease: 0.10,
+    penaltyMonths: 3,
+    maintenanceCap: 500,
+  },
+  futureTimeline: [
+    { when: "عند التوقيع", text: "دفعة مقدمة 7,600 ر.س — إيجار شهر + تأمين شهر", icon: "wallet", level: "yellow" },
+    { when: "أول 6 أشهر", text: "تتحمّل أي صيانة تحت 500 ر.س من جيبك", icon: "warning", level: "yellow" },
+    { when: "بعد سنة", text: "يرتفع الإيجار تلقائياً 10% ليصبح 4,180 ر.س شهرياً", icon: "calendar", level: "red" },
+    { when: "الخروج المبكر", text: "غرامة 3 أشهر إيجار = 11,400 ر.س", icon: "warning", level: "red" },
+    { when: "انتهاء المدة", text: "تجديد تلقائي سنة كاملة ما لم تُشعرهم قبل 60 يوم", icon: "lock", level: "red" },
+  ],
+  hiddenItems: [
+    {
+      level: "red",
+      title: "تجديد تلقائي مخفي",
+      original: "يتجدد هذا العقد تلقائياً لمدة مماثلة عند انقضاء المدة الأصلية ما لم يُبَلَّغ الطرف الثاني كتابياً قبل ستين يوماً من تاريخ انتهاء العقد.",
+      translated: "لو ما أبلغتهم قبل شهرين من انتهاء العقد، راح يتجدد لك سنة كاملة تلقائياً وأنت ما تدري!",
+    },
+    {
+      level: "red",
+      title: "تعديل الرسوم بدون إشعار",
+      original: "يحق للطرف الأول مراجعة وتعديل الرسوم الإدارية والخدمية وفقاً لمتطلبات السوق.",
+      translated: "ممكن يرفعون عليك رسوم الخدمات في أي وقت بدون ما يخبرونك مسبقاً.",
+    },
+    {
+      level: "yellow",
+      title: "مسؤولية الصيانة عليك",
+      original: "يتحمل المستأجر كافة أعمال الصيانة الدورية والإصلاحات البسيطة التي لا تتجاوز قيمتها خمسمائة ريال.",
+      translated: "أي عطل بالوحدة تحت 500 ريال أنت المسؤول تصلحه من جيبك.",
+    },
+  ],
+  marketComparison: [
+    { item: "غرامة الإنهاء المبكر", yours: "3 أشهر (9,000)", market: "شهر (3,000)", diff: "+6,000 ريال", status: "bad" },
+    { item: "زيادة الإيجار السنوية", yours: "10%", market: "5%", diff: "+5,670 / 3 سنوات", status: "bad" },
+    { item: "رسوم إدارية", yours: "2,500 ر.س/سنة", market: "غير معتادة", diff: "+2,500 /سنة", status: "bad" },
+    { item: "مسؤولية الصيانة", yours: "على المستأجر", market: "على المؤجر", diff: "+1,920 /سنة", status: "bad" },
+    { item: "مدة الإشعار للإخلاء", yours: "90 يوم", market: "30 يوم", diff: "مرونة أقل", status: "bad" },
+    { item: "وديعة الضمان", yours: "شهر واحد", market: "شهر واحد", diff: "متطابق", status: "good" },
+  ],
+  // تراكم التكلفة عبر 3 سنوات (عقدك مقابل السوق العادل)
+  costProjection: {
+    labels: ["السنة 1", "السنة 2", "السنة 3"],
+    yours:  [43420, 47020, 50980],
+    market: [38400, 40200, 42090],
+    gaps:   [5020, 6820, 8890],
+    total: 20730,
+    avgPerYear: 6820,
+  },
+  // التعرّض المالي الناتج عن بنود العقد
+  exposure: {
+    total3y: 20730,
+    avgPerYear: 6820,
+    scenarios: { best: 5020, expected: 20730, worst: 62730 },
+    sources: [
+      { label: "رسوم إدارية مخفية", desc: "رسوم تُضاف دون ذكرها صراحة في العقد", yr: 2500, y3: 7500, level: "red" },
+      { label: "صيانة على حسابك", desc: "أعطال تحت 500 ريال تتحمّلها بدل المؤجر (~4 أعطال × 480)", yr: 1920, y3: 5760, level: "yellow" },
+      { label: "فرق الزيادة السنوية", desc: "إيجارك يرتفع 10% بدل 5% المعتاد — يتراكم سنة بعد سنة", yr: 1800, y3: 5670, level: "red", rising: true },
+      { label: "فرق رسوم الخدمات", desc: "رفع رسوم الخدمات حتى 25% دون موافقتك", yr: 600, y3: 1800, level: "yellow" },
+    ],
+    conditional: [
+      { title: "الإنهاء المبكر", level: "yellow", amount: "+6,000 ريال", desc: "غرامة 3 أشهر (9,000 ريال) مقابل شهر معتاد (3,000 ريال) — تدفع 6,000 فوق السوق إن احتجت الخروج." },
+      { title: "فوات إشعار التجديد", level: "red", amount: "+36,000 ريال", desc: "لو ما أبلغت قبل 60 يوماً، ينحبس عليك العقد سنة كاملة بالتزام 36,000 ريال لم تخطّط له." },
+    ],
+  },
+  risks: [
+    {
+      text: "بند التجديد التلقائي غير واضح", level: "red",
+      original: "يتجدد هذا العقد تلقائياً لمدة مماثلة عند انقضاء المدة الأصلية ما لم يُبَلَّغ الطرف الثاني كتابياً قبل ستين يوماً.",
+      translated: "لو ما أبلغتهم قبل شهرين ما تقدر تخرج من العقد — يتجدد تلقائياً سنة كاملة.",
+    },
+    {
+      text: "صلاحية تعديل الرسوم من طرف واحد", level: "red",
+      original: "يحق للطرف الأول مراجعة وتعديل الرسوم الإدارية والخدمية وفقاً لمتطلبات السوق دون الرجوع للطرف الثاني.",
+      translated: "يقدرون يرفعون الرسوم وقت ما يبون بدون ما يخبرونك أو تقدر ترفض.",
+    },
+    {
+      text: "غرامة الإنهاء أعلى من المعتاد", level: "yellow",
+      original: "في حال رغبة المستأجر في إنهاء العقد قبل مدته يلتزم بدفع ما يعادل ثلاثة أشهر إيجار كغرامة.",
+      translated: "لو أبيت تخرج قبل الموعد تدفع 3 أشهر إيجار — المعتاد في السوق شهر واحد بس.",
+    },
+    {
+      text: "مسؤولية صيانة أوسع من المعتاد", level: "yellow",
+      original: "يتحمل المستأجر كافة أعمال الصيانة الدورية والإصلاحات البسيطة التي لا تتجاوز قيمتها خمسمائة ريال.",
+      translated: "أي عطل تحت 500 ريال من جيبك — حتى لو المشكلة من الوحدة مو منك.",
+    },
+    {
+      text: "بنود الخصوصية واضحة ومنصفة", level: "green",
+      original: "يلتزم الطرف الأول بعدم الدخول للوحدة إلا بإشعار مسبق لا يقل عن 24 ساعة إلا في حالات الطوارئ.",
+      translated: "ما يقدرون يدخلون بدون إذنك — هذا حق واضح ومكتوب لصالحك.",
+    },
+    {
+      text: "وديعة الضمان معقولة", level: "green",
+      original: "تبلغ وديعة الضمان ما يعادل إيجار شهر واحد وتُرد خلال 30 يوماً من إنهاء العقد.",
+      translated: "الوديعة شهر واحد وترجع خلال شهر — هذا معقول ومتوافق مع السوق.",
+    },
+  ],
+  objectionLetters: [
+    {
+      source: "كاشف المخاطر",
+      issue: "بند التجديد التلقائي غير واضح",
+      letter: "أود الاعتراض على البند المتعلق بالتجديد التلقائي للعقد، إذ يُلزمني بالإشعار قبل ستين يوماً دون توضيح آلية الإشعار أو تأكيد استلامه من الطرف الأول. أطالب بتعديل هذا البند بما يضمن حقي في الإشعار بطريقة موثقة وواضحة.",
+    },
+    {
+      source: "كاشف المخاطر",
+      issue: "غرامة الإنهاء أعلى من المعتاد",
+      letter: "أود الاعتراض على غرامة الإنهاء المبكر البالغة ثلاثة أشهر إيجار، إذ تتجاوز المعتاد في السوق السعودي الذي لا يتعدى شهراً واحداً. أطالب بمراجعة هذا البند وتعديله ليتوافق مع معايير السوق.",
+    },
+    {
+      source: "كاشف المخفي",
+      issue: "تعديل الرسوم بدون إشعار",
+      letter: "أود الاعتراض على البند الذي يمنح الطرف الأول صلاحية تعديل الرسوم الإدارية دون إشعار مسبق. هذا البند يخل بمبدأ التوازن التعاقدي، وأطالب باشتراط إشعار مسبق لا يقل عن ثلاثين يوماً لأي تعديل في الرسوم.",
+    },
+    {
+      source: "كاشف المخفي",
+      issue: "مسؤولية الصيانة عليك",
+      letter: "أود الاعتراض على تحميلي كافة أعمال الصيانة الدورية حتى حد خمسمائة ريال، إذ أن الصيانة الدورية تقع عادةً على عاتق المؤجر. أطالب بإعادة النظر في هذا البند بما يتوافق مع أحكام نظام الإيجار السعودي.",
+    },
+    {
+      source: "الأثر المالي",
+      issue: "نسبة الالتزام الشهري مرتفعة",
+      letter: "بناءً على تحليل قدرتي المالية، يمثّل هذا الالتزام نسبة مرتفعة من دخلي الشهري. أطالب بإعادة النظر في قيمة الإيجار أو في آلية الزيادة السنوية بما يحافظ على توازن التزاماتي المالية طوال مدة العقد.",
+    },
+  ],
+};
+
+const RENTAL_TEXT = `عقد إيجار سكني
+
+المادة (1): يؤجر الطرف الأول الوحدة السكنية للطرف الثاني لمدة سنة ميلادية بقيمة إيجارية شهرية قدرها 3800 ريال.
+
+المادة (2): تبلغ وديعة الضمان ما يعادل إيجار شهر واحد وتُرد خلال 30 يوماً من إنهاء العقد.
+
+المادة (3): يتجدد هذا العقد تلقائياً لمدة مماثلة عند انقضاء المدة الأصلية ما لم يُبَلَّغ الطرف الثاني كتابياً قبل ستين يوماً من تاريخ انتهاء العقد.
+
+المادة (4): يحق للطرف الأول مراجعة وتعديل الرسوم الإدارية والخدمية وفقاً لمتطلبات السوق دون الرجوع للطرف الثاني.
+
+المادة (5): يتحمل المستأجر كافة أعمال الصيانة الدورية والإصلاحات البسيطة التي لا تتجاوز قيمتها خمسمائة ريال.
+
+المادة (6): في حال رغبة المستأجر في إنهاء العقد قبل مدته يلتزم بدفع ما يعادل ثلاثة أشهر إيجار كغرامة.
+
+المادة (7): يلتزم الطرف الأول بعدم الدخول للوحدة إلا بإشعار مسبق لا يقل عن 24 ساعة إلا في حالات الطوارئ.
+
+المادة (8): ترتفع القيمة الإيجارية بنسبة 10% سنوياً عند كل تجديد.`;
+
+const FINANCE_DATA = {
   contractType: "عقد تمويل شخصي",
   safetyScore: 38,
   safetyLevel: "yellow",
@@ -143,20 +312,299 @@ const SAMPLE_ANALYSIS = {
   ],
 };
 
+const FINANCE_TEXT = `عقد تمويل شخصي
+
+المادة (1): تمنح الجهة الممولة الطرف الثاني تمويلاً بمبلغ 150,000 ريال يُسدَّد على 60 قسطاً شهرياً متساوياً قدر كل قسط 3,250 ريال.
+
+المادة (2): يُمنح التمويل بنسبة ربح ثابتة قدرها 6% سنوياً تُحتسب على كامل مبلغ التمويل طوال مدة العقد، ويبلغ معدل النسبة السنوي الفعلي (APR) نحو 10.8%.
+
+المادة (3): يُضاف قسط التأمين على التمويل البالغ 6,750 ريال إلى أصل المبلغ الممول وتُحتسب عليه نسبة الربح ذاتها، إضافة إلى رسوم إدارية قدرها 1,500 ريال.
+
+المادة (4): يلتزم الطرف الثاني بتحويل راتبه إلى الجهة الممولة طوال مدة التمويل، ويفوّضها بالخصم المباشر من أي مستحقات أو حسابات تعود له.
+
+المادة (5): في حال رغبة الطرف الثاني في السداد المبكر يلتزم بدفع غرامة تعادل أرباح المدة المتبقية من التمويل.
+
+المادة (6): في حال تأخر الطرف الثاني عن سداد أي قسط يحق للجهة الممولة المطالبة بكامل المبلغ المتبقي دفعة واحدة دون إشعار مسبق، وتُضاف رسوم تأخير عن كل قسط لم يُسدَّد في موعده.
+
+المادة (7): يُرفق بالعقد جدول سداد يوضّح قيمة كل قسط وتاريخ استحقاقه وأصل ما تبقى من المبلغ.
+
+المادة (8): يحق للطرف الثاني العدول عن العقد خلال عشرة أيام من توقيعه دون إبداء أسباب وفق ضوابط الجهة المنظِّمة.`;
+
+const INVEST_DATA = {
+  contractType: "عقد فرصة استثمارية",
+  safetyScore: 28,
+  safetyLevel: "red",
+  summary: "فرصة تعِد بعائد مرتفع «مضمون» مع غياب ترخيص هيئة السوق المالية، ورأس مال غير مضمون، وفترة حظر ورسوم تلتهم العائد — مؤشرات تستدعي حذراً شديداً قبل أي التزام.",
+  money: {
+    investmentAmount: 50000,    // المبلغ المقترح استثماره
+    promisedReturn: 0.22,       // العائد السنوي الموعود
+    realisticReturn: 0.08,      // العائد الواقعي المعقول للسوق
+    netAfterFeesReturn: 0.05,   // الواقعي بعد خصم الرسوم (تقريبي)
+    lockupYears: 3,             // فترة الحظر
+    mgmtFee: 0.02,              // رسوم إدارية سنوية
+    perfFee: 0.20,              // رسوم أداء (من الأرباح)
+    earlyExitPenalty: 0.15,     // غرامة الخروج المبكر (% من رأس المال)
+    minInvestment: 50000,
+  },
+  futureTimeline: [
+    { when: "عند التوقيع", text: "تحوّل 50,000 ر.س وتُحجز لمدة 3 سنوات لا يمكن سحبها خلالها", icon: "lock", level: "red" },
+    { when: "خلال فترة الاستثمار", text: "تُخصم رسوم إدارية 2% سنوياً + 20% من أي أرباح تتحقق", icon: "chart", level: "yellow" },
+    { when: "عند طلب الخروج المبكر", text: "غرامة 15% من رأس المال (7,500 ر.س) — إن سُمح بالخروج أصلاً", icon: "warning", level: "red" },
+    { when: "عند تعثّر الفرصة", text: "رأس المال غير مضمون؛ قد تخسر المبلغ كاملاً رغم وعد «العائد المضمون»", icon: "warning", level: "red" },
+    { when: "نهاية المدة", text: "استرداد رأس المال والعوائد «مشروط بسيولة الصندوق» دون ضمان زمني", icon: "wallet", level: "red" },
+  ],
+  hiddenItems: [
+    {
+      level: "red",
+      title: "عائد «مضمون» مع رأس مال غير مضمون",
+      original: "يضمن الطرف الأول للطرف الثاني عائداً سنوياً قدره 22% مع الإقرار بأن رأس المال معرّض لمخاطر السوق وغير مضمون الاسترداد.",
+      translated: "يوعدونك بعائد «مضمون 22%» وفي نفس الوقت يكتبون أن رأس مالك غير مضمون — تناقض خطير؛ العائد المضمون بهذه النسبة شبه مستحيل وعلامة احتيال محتملة.",
+    },
+    {
+      level: "red",
+      title: "غياب ترخيص هيئة السوق المالية",
+      original: "تُدار هذه الفرصة وفق ترتيبات خاصة بين الأطراف دون الإشارة إلى ترخيص من جهة رقابية.",
+      translated: "الجهة غير مرخّصة من هيئة السوق المالية — يعني استثمار خارج الرقابة، وحقوقك في الاسترداد ضعيفة قانونياً.",
+    },
+    {
+      level: "yellow",
+      title: "رسوم أداء تلتهم العائد",
+      original: "يستحق الطرف الأول رسوم إدارة سنوية 2% من قيمة الاستثمار، إضافة إلى 20% من صافي الأرباح المحققة.",
+      translated: "ياخذون 2% سنوياً من المبلغ + 20% من أي أرباح، فعائدك الفعلي أقل بكثير من الرقم المعلن.",
+    },
+  ],
+  marketComparison: [
+    { item: "العائد السنوي الموعود", yours: "22% مضمون", market: "7–9% بلا ضمان", diff: "غير واقعي", status: "bad" },
+    { item: "الترخيص الرقابي", yours: "غير مرخّص", market: "مرخّص (CMA)", diff: "حماية أقل", status: "bad" },
+    { item: "رسوم الأداء", yours: "20%", market: "10–15%", diff: "أعلى", status: "bad" },
+    { item: "فترة الحظر والخروج", yours: "3 سنوات + 15%", market: "1–2 سنة + ≤5%", diff: "أقسى", status: "bad" },
+    { item: "ضمان رأس المال", yours: "غير مضمون", market: "غير مضمون", diff: "طبيعي للاستثمار", status: "good" },
+    { item: "الرسوم الإدارية", yours: "2% سنوياً", market: "1–2%", diff: "ضمن النطاق", status: "good" },
+  ],
+  // الوعد مقابل الواقع: نمو 50,000 ر.س خلال 3 سنوات (موعود 22% مقابل واقعي 8%)
+  costProjection: {
+    labels: ["السنة 1", "السنة 2", "السنة 3"],
+    yours:  [61000, 74420, 90792],
+    market: [54000, 58320, 62986],
+    gaps:   [7000, 16100, 27806],
+    total: 27806,
+    avgPerYear: 9269,
+  },
+  exposure: {
+    capitalAtRisk: 50000,
+    total3y: 8360,
+    avgPerYear: 2787,
+    scenarios: { best: 62986, expected: 56000, worst: 0 },
+    sources: [
+      { label: "الرسوم الإدارية (2% سنوياً)", desc: "تُخصم سنوياً من قيمة استثمارك بصرف النظر عن الأداء", yr: 1120, y3: 3360, level: "yellow" },
+      { label: "رسوم الأداء (20% من الأرباح)", desc: "تقتطع خُمس أي أرباح تتحقق فعلاً", yr: 867, y3: 2600, level: "yellow" },
+      { label: "تكلفة حبس السيولة", desc: "تعطيل 50,000 ر.س ثلاث سنوات بدل استثمارها في خيار سائل", yr: 800, y3: 2400, level: "yellow" },
+    ],
+    conditional: [
+      { title: "الخروج المبكر", level: "yellow", amount: "−7,500 ريال", desc: "غرامة 15% من رأس المال عند طلب الاسترداد قبل انتهاء فترة الحظر — إن سُمح بالخروج أصلاً." },
+      { title: "تعثّر الفرصة", level: "red", amount: "خسارة كاملة", desc: "رأس المال غير مضمون والجهة غير مرخّصة من هيئة السوق المالية؛ قد تخسر المبلغ بالكامل دون حماية نظامية." },
+    ],
+  },
+  risks: [
+    {
+      text: "عائد مرتفع «مضمون» غير واقعي", level: "red",
+      original: "يضمن الطرف الأول للطرف الثاني عائداً سنوياً قدره 22% طوال مدة الاستثمار.",
+      translated: "عائد سنوي 22% «مضمون» مقابل واقع السوق 7–9% — وعد غير واقعي يرفع شبهة المخاطرة العالية أو الاحتيال.",
+    },
+    {
+      text: "جهة غير مرخّصة من هيئة السوق المالية", level: "red",
+      original: "تُدار هذه الفرصة وفق ترتيبات خاصة بين الأطراف دون الإشارة إلى ترخيص من جهة رقابية.",
+      translated: "ما لقينا ترخيصاً من هيئة السوق المالية — التعامل مع جهة غير مرخّصة يعرّض أموالك لخطر كبير وبلا حماية.",
+    },
+    {
+      text: "رأس المال غير مضمون (خطر خسارة كاملة)", level: "red",
+      original: "يقر الطرف الثاني بأن رأس المال معرّض لمخاطر السوق وغير مضمون الاسترداد كلياً أو جزئياً.",
+      translated: "ممكن تخسر المبلغ كله — وهذا يتناقض مع وعد «العائد المضمون» في بند آخر.",
+    },
+    {
+      text: "حظر السحب 3 سنوات وغرامة خروج 15%", level: "yellow",
+      original: "لا يجوز للطرف الثاني استرداد مبلغ الاستثمار قبل مرور ثلاث سنوات، وفي حال الخروج المبكر تُطبَّق غرامة 15% من رأس المال.",
+      translated: "أموالك محبوسة 3 سنوات، ولو احتجتها تدفع 15% غرامة — سيولة شبه معدومة.",
+    },
+    {
+      text: "تقارير أداء دورية ربع سنوية", level: "green",
+      original: "يلتزم الطرف الأول بتزويد الطرف الثاني بتقرير أداء ربع سنوي يوضّح حركة الاستثمار.",
+      translated: "تستلم تقريراً كل 3 أشهر عن وضع استثمارك — بند إيجابي لصالحك.",
+    },
+    {
+      text: "حق الاطلاع على حسابات الفرصة", level: "green",
+      original: "يحق للطرف الثاني الاطلاع على السجلات والحسابات المتعلقة باستثماره عند الطلب.",
+      translated: "تقدر تطلب الاطلاع على الحسابات وقت ما تبي — شفافية مكتوبة لصالحك.",
+    },
+  ],
+  objectionLetters: [
+    {
+      source: "كاشف المخاطر",
+      issue: "وعد بعائد «مضمون» غير واقعي",
+      letter: "أود الاعتراض على وصف العائد بأنه «مضمون» بنسبة 22% سنوياً، إذ لا يتسق ذلك مع طبيعة الاستثمار ولا مع متوسطات السوق (7–9%). أطالب بحذف لفظ «الضمان» وإبراز تحذير صريح من مخاطر رأس المال، مع إفصاح موثّق عن أساس احتساب العائد المتوقع.",
+    },
+    {
+      source: "كاشف المخاطر",
+      issue: "غياب ترخيص هيئة السوق المالية",
+      letter: "أطلب تزويدي بما يثبت ترخيص الجهة وممارستها لنشاط الاستثمار من هيئة السوق المالية، إذ إن التعامل مع جهة غير مرخّصة يعرّضني لمخاطر نظامية كبيرة. وفي حال عدم وجود ترخيص ساري، فإنني أتحفظ على الاستمرار في هذا العقد.",
+    },
+    {
+      source: "كاشف المخفي",
+      issue: "تناقض ضمان العائد مع عدم ضمان رأس المال",
+      letter: "أود الاعتراض على التناقض بين بند يضمن عائداً ثابتاً وبند آخر يقرّ بأن رأس المال غير مضمون. أطالب بإزالة هذا التضارب وتوضيح الالتزامات الفعلية للطرف الأول بشكل لا يحتمل التأويل المضلِّل.",
+    },
+    {
+      source: "كاشف المخفي",
+      issue: "رسوم أداء مرتفعة تلتهم العائد",
+      letter: "أود الاعتراض على رسوم الأداء البالغة 20% من الأرباح إضافة إلى الرسوم الإدارية السنوية. أطالب بتخفيض رسوم الأداء بما يقارب السوق (10–15%)، واعتماد آلية «حد أعلى سابق» (High-Water Mark) بحيث لا تُحتسب الرسوم إلا على الأرباح الصافية الجديدة.",
+    },
+    {
+      source: "الأثر المالي",
+      issue: "حجم الاستثمار مرتفع مقارنة بثروتي",
+      letter: "بناءً على تحليل وضعي المالي، يمثّل هذا الاستثمار نسبة مرتفعة من ثروتي السائلة وفرصةً عالية المخاطر. أطالب بخفض الحد الأدنى للاستثمار أو إتاحة الدخول على دفعات تدريجية، بما يقلّل من تركيز رأس مالي في فرصة واحدة غير مضمونة.",
+    },
+  ],
+};
+
+const INVEST_TEXT = `عقد فرصة استثمارية
+
+المادة (1): يستثمر الطرف الثاني مبلغاً قدره 50,000 ريال في الفرصة التي يطرحها الطرف الأول، بحد أدنى للاستثمار قدره 50,000 ريال.
+
+المادة (2): يضمن الطرف الأول للطرف الثاني عائداً سنوياً قدره 22% طوال مدة الاستثمار.
+
+المادة (3): يقر الطرف الثاني بأن رأس المال معرّض لمخاطر السوق وغير مضمون الاسترداد كلياً أو جزئياً.
+
+المادة (4): تُدار هذه الفرصة وفق ترتيبات خاصة بين الأطراف دون الإشارة إلى ترخيص من جهة رقابية.
+
+المادة (5): يستحق الطرف الأول رسوم إدارة سنوية 2% من قيمة الاستثمار، إضافة إلى 20% من صافي الأرباح المحققة.
+
+المادة (6): لا يجوز للطرف الثاني استرداد مبلغ الاستثمار قبل مرور ثلاث سنوات، وفي حال الخروج المبكر تُطبَّق غرامة 15% من رأس المال.
+
+المادة (7): استرداد رأس المال والعوائد عند انتهاء المدة مشروط بسيولة الصندوق دون التزام بمدة زمنية محددة.
+
+المادة (8): يلتزم الطرف الأول بتزويد الطرف الثاني بتقرير أداء ربع سنوي، ويحق للطرف الثاني الاطلاع على السجلات والحسابات المتعلقة باستثماره عند الطلب.`;
+
+// ===================== النصوص المتغيّرة حسب نوع العقد =====================
+// كل ما يختلف بين العقود من صياغة — مجمّع هنا بدل ما يتكرر في المكوّنات.
+const RENTAL_COPY = {
+  verdict: { green: "العقد مناسب لك", yellow: "وقّع بحذر بعد التفاوض", red: "لا يُنصح بالتوقيع حالياً" },
+  legalNote: (d) => (d.safetyLevel === "green" ? "بنود مقبولة" : "توجد بنود تستحق الاعتراض"),
+  finNote: (fin) => `الإيجار يمثل ${pct(fin.housing)} من دخلك.`,
+  cta: "أضف دخلك ليحسب مجهر إذا كان العقد مناسباً لمحفظتك.",
+  agentShort: { financial: "يحلل دخلك ويقرر إذا العقد يناسبك" },
+  market: {
+    intro: "بنود عقدك مقابل المعتاد في السوق السعودي — والفرق محسوباً بالريال.",
+    col: "عقدك",
+    summary: (d, bad, unknown = 0) =>
+      `عقدك أسوأ في ${bad} من ${d.marketComparison.length - unknown} بنود قابلة للمقارنة، والفرق يصل إلى نحو ${fmt(d.costProjection.avgPerYear)} ريال سنوياً فوق السوق — وهي بنود قابلة للتفاوض قبل التوقيع.${unknown ? ` ${bandCount(unknown)} بلا بيانات سوق للمقارنة.` : ""}`,
+  },
+  chart: { title: "كيف تتراكم التكلفة (مقارنة بالسوق)", yours: "عقدك", market: "السوق العادل", gap: "الفرق الذي تدفعه زيادة" },
+  hero: {
+    accent: "#F5C84B", value: "#FFD56A", tintBg: "rgba(245,200,75,0.10)", tintBorder: "rgba(245,200,75,0.30)",
+    icon: "wallet", label: "إجمالي التعرّض المتوقع", unit: "ريال / 3 سنوات",
+    amount: (exp) => exp.total3y,
+    note: (exp) => `بمعدل ~${fmt(exp.avgPerYear)} ريال سنوياً فوق ما يدفعه السوق على عقد مماثل.`,
+  },
+  scenarios: {
+    title: "سيناريوهات التعرّض", best: "بلا مفاجآت", expected: "على مدى 3 سنوات", worst: "إنهاء + فوات تجديد",
+    note: "«أسوأ حالة» تفترض أنك احتجت تخرج مبكراً أو فاتك إشعار التجديد — تفاصيلها في «تعرّض مشروط» بالأسفل.",
+  },
+  sourcesTitle: "من وين تطلع الفلوس؟",
+  objectionTo: "للطرف الآخر",
+};
+
+const FINANCE_COPY = {
+  verdict: { green: "التمويل مناسب لك", yellow: "وقّع بحذر بعد التفاوض", red: "لا يُنصح بالتوقيع حالياً" },
+  legalNote: (d) => (d.safetyLevel === "green" ? "بنود مقبولة" : "توجد بنود تستحق الاعتراض"),
+  finNote: (fin) => `القسط يمثل ${pct(fin.burden)} من دخلك وعبء الدين ${pct(fin.dbr)}.`,
+  cta: "أضف دخلك ليحسب مجهر إذا كان هذا التمويل يناسب وضعك.",
+  agentShort: { financial: "يحلل دخلك ويقرر إذا التمويل يناسبك" },
+  market: {
+    intro: "بنود تمويلك مقابل المعتاد في السوق السعودي — والفرق محسوباً بالريال.",
+    col: "تمويلك",
+    summary: (d, bad, unknown = 0) =>
+      `تمويلك أسوأ في ${bad} من ${d.marketComparison.length - unknown} بنود قابلة للمقارنة، والفرق يصل إلى نحو ${fmt(d.costProjection.avgPerYear)} ريال سنوياً فوق السوق — وهي بنود قابلة للتفاوض قبل التوقيع.${unknown ? ` ${bandCount(unknown)} بلا بيانات سوق للمقارنة.` : ""}`,
+  },
+  chart: { title: "كيف تتراكم التكلفة (مقارنة بتمويل عادل)", yours: "تمويلك", market: "تمويل عادل", gap: "الفرق الذي تدفعه زيادة" },
+  hero: {
+    accent: "#F5C84B", value: "#FFD56A", tintBg: "rgba(245,200,75,0.10)", tintBorder: "rgba(245,200,75,0.30)",
+    icon: "wallet", label: "إجمالي التعرّض المتوقع", unit: "ريال / 3 سنوات",
+    amount: (exp) => exp.total3y,
+    note: (exp) => `بمعدل ~${fmt(exp.avgPerYear)} ريال سنوياً فوق ما يدفعه السوق على تمويل مماثل.`,
+  },
+  scenarios: {
+    title: "سيناريوهات التعرّض", best: "بلا مفاجآت", expected: "على مدى 3 سنوات", worst: "سداد مبكر أو تعثر",
+    note: "«أسوأ حالة» تفترض سداداً مبكراً بكامل غرامة العقد أو تعثراً يفعّل الرسوم والقيود الائتمانية — تفاصيلها في «تعرّض مشروط» بالأسفل.",
+  },
+  sourcesTitle: "من وين تطلع الفلوس؟",
+  objectionTo: "للجهة الممولة",
+};
+
+const INVEST_COPY = {
+  verdict: { green: "الفرصة مناسبة لك", yellow: "استثمر بحذر بعد التحقق", red: "لا يُنصح بالاستثمار حالياً" },
+  legalNote: (d) => (d.safetyLevel === "green" ? "بنود مقبولة" : "توجد بنود ومؤشرات خطيرة (غياب ترخيص، عائد مضمون غير واقعي)"),
+  finNote: (fin) => `يمثّل هذا الاستثمار ${pct(fin.conc)} من ثروتك.`,
+  cta: "أضف حجم ثروتك ليحسب مجهر إذا كانت هذه الفرصة تناسب وضعك.",
+  agentShort: { financial: "يحلل دخلك ويقرر إذا العقد يناسبك" },
+  market: {
+    intro: "بنود هذه الفرصة مقابل المعتاد في السوق السعودي — والفجوة بين الوعد والواقع.",
+    col: "هذه الفرصة",
+    summary: (d, bad, unknown = 0) =>
+      `هذه الفرصة أسوأ في ${bad} من ${d.marketComparison.length - unknown} بنود قابلة للمقارنة، والفجوة بين العائد الموعود والواقعي تصل إلى نحو ${fmt(d.costProjection.total)} ريال خلال 3 سنوات — وعد يصعب تحققه. تحقّق من الترخيص قبل أي التزام.${unknown ? ` ${bandCount(unknown)} بلا بيانات سوق للمقارنة.` : ""}`,
+  },
+  chart: { title: "الوعد مقابل الواقع: نمو 50,000 ر.س خلال 3 سنوات", yours: "القيمة الموعودة", market: "القيمة الواقعية المتوقعة", gap: "فجوة الوعد" },
+  hero: {
+    accent: "#FF5C5C", value: "#FF6B6B", tintBg: "rgba(255,59,59,0.12)", tintBorder: "rgba(255,59,59,0.32)",
+    icon: "warning", label: "رأس المال المعرّض للخطر", unit: "ريال",
+    amount: (exp) => exp.capitalAtRisk,
+    note: () => "الجهة غير مرخّصة من هيئة السوق المالية ورأس المال غير مضمون — في أسوأ الحالات قد لا تسترد شيئاً من هذا المبلغ.",
+  },
+  scenarios: {
+    title: "سيناريوهات مصير رأس مالك بعد 3 سنوات", best: "عائد واقعي ~8%", expected: "بعد خصم الرسوم", worst: "تعثّر / فشل الفرصة",
+    note: "القيم تمثّل ما قد تؤول إليه 50,000 ر.س. رأس المال غير مضمون والجهة غير مرخّصة؛ في أسوأ الحالات قد لا تسترد شيئاً.",
+  },
+  sourcesTitle: "ما الذي يقلّص عائدك الفعلي؟",
+  objectionTo: "للجهة الممولة",
+};
+
+// ===================== سجل العقود =====================
+// إضافة نوع عقد جديد = إضافة سطر واحد هنا + بيانات + دالة حساب + لوحة مالية.
+const CONTRACTS = {
+  rental: {
+    id: "rental", label: "عقد إيجار", icon: "file",
+    data: RENTAL_DATA, text: RENTAL_TEXT, copy: RENTAL_COPY,
+    compute: computeRental, Financial: RentalFinancialPanel,
+    defaults: { income: 12000, obligations: 1800 },
+  },
+  finance: {
+    id: "finance", label: "عقد تمويل", icon: "chart",
+    data: FINANCE_DATA, text: FINANCE_TEXT, copy: FINANCE_COPY,
+    compute: computeFinance, Financial: FinanceFinancialPanel,
+    defaults: { income: 13000, obligations: 2600 },
+  },
+  invest: {
+    id: "invest", label: "عقد استثماري", icon: "shield",
+    data: INVEST_DATA, text: INVEST_TEXT, copy: INVEST_COPY,
+    compute: computeInvest, Financial: InvestFinancialPanel,
+    defaults: { income: 200000, obligations: 50000 }, // = صافي الثروة / مبلغ الاستثمار
+  },
+};
+const CONTRACT_TYPES = Object.values(CONTRACTS);
+
+// سياق العقد الفعّال — يوصّل البيانات والنصوص للمكوّنات بدون تمرير props في كل طبقة
+const ContractCtx = createContext(CONTRACTS.rental);
+const useContract = () => useContext(ContractCtx);
+const agentsFor = (copy) => AGENTS.map((a) => (copy.agentShort[a.id] ? { ...a, short: copy.agentShort[a.id] } : a));
+
 const AGENTS = [
   { id: "risks",     name: "كاشف المخاطر",     short: "يحدد كل بند خطير ويصنّفه",            color: "#FF3B3B", icon: "shield" },
   { id: "hidden",    name: "كاشف المخفي",      short: "يكشف الثغرات والبنود الغامضة",        color: "#B03CFF", icon: "search" },
   { id: "market",    name: "مقارنة السوق",     short: "يقارن بنودك بالمعتاد في السوق",       color: "#FFB800", icon: "chart" },
   { id: "future",    name: "النظرة المستقبلية", short: "يوضح وش بيصير لك بعد التوقيع",         color: "#00C48C", icon: "lighthouse" },
-  { id: "financial", name: "الأثر المالي",      short: "يحلل دخلك ويقرر إذا التمويل يناسبك",   color: "#0EC9E0", icon: "wallet" },
+  { id: "financial", name: "الأثر المالي",      short: "يحلل دخلك ويقرر إذا العقد يناسبك",     color: "#0EC9E0", icon: "wallet" },
   { id: "object",    name: "وكيل الاعتراض",    short: "يكتب لك رسالة اعتراض قانونية جاهزة",   color: "#3C8FFF", icon: "pen" },
 ];
 
-const CONTRACT_TYPES = [
-  { label: "عقد إيجار", icon: "file" },
-  { label: "عقد تمويل", icon: "chart" },
-  { label: "عقد استثماري", icon: "shield" },
-];
 
 const levelColors = {
   red:    { bg: "#FF3B3B", light: "rgba(255,59,59,0.12)",  text: "#FF5C5C", label: "خطر" },
@@ -287,8 +735,51 @@ function MeterBar({ value, max = 1, color, threshold, thresholdLabel }) {
   );
 }
 
-// ===================== FINANCIAL ENGINE (FINANCING / DBR) =====================
-function computeFinancials(income, otherObligations, m) {
+// ===================== محرّكات الحساب — واحد لكل نوع عقد =====================
+
+function computeRental(income, otherObligations, m) {
+  const rent = m.monthlyRent;
+  const housing = rent / income;                       // housing burden
+  const totalObl = otherObligations + rent;
+  const dti = totalObl / income;                       // total obligations-to-income
+  const remaining = income - totalObl;                 // free cash after obligations
+  const upfront = rent + rent * m.depositMonths;       // first month + deposit
+  const penalty = rent * m.penaltyMonths;
+  const years = [0, 1, 2].map((y) => Math.round(rent * Math.pow(1 + m.annualIncrease, y)));
+
+  let score = 100;
+  score -= Math.max(0, housing - 0.25) * 220;          // penalize housing over 25%
+  score -= Math.max(0, dti - 0.36) * 180;              // penalize DTI over 36%
+  if (remaining < income * 0.25) score -= 14;          // thin safety buffer
+  score = Math.round(Math.max(3, Math.min(99, score)));
+  const level = score >= 70 ? "green" : score >= 45 ? "yellow" : "red";
+  const verdict = level === "green" ? "مناسب للتوقيع" : level === "yellow" ? "وقّع بحذر" : "غير مناسب حالياً";
+
+  const reasons = [];
+  reasons.push(housing > 0.33
+    ? { ok: false, text: `الإيجار يلتهم ${pct(housing)} من دخلك — أعلى من الحد الموصى به (≤30%)` }
+    : housing > 0.27
+      ? { ok: null, text: `الإيجار ${pct(housing)} من دخلك — قريب من السقف الموصى به (30%)` }
+      : { ok: true, text: `الإيجار ${pct(housing)} من دخلك — ضمن الحد الصحي (≤30%)` });
+  reasons.push(dti > 0.43
+    ? { ok: false, text: `مجموع التزاماتك ${pct(dti)} من الدخل — يفوق الحد الآمن (≤40%)` }
+    : dti > 0.36
+      ? { ok: null, text: `مجموع التزاماتك ${pct(dti)} من الدخل — مرتفع نسبياً` }
+      : { ok: true, text: `مجموع التزاماتك ${pct(dti)} من الدخل — في المنطقة الآمنة` });
+  reasons.push(remaining < income * 0.25
+    ? { ok: false, text: `يتبقى لك ${fmt(remaining)} ر.س فقط بعد الالتزامات — هامش ضيق` }
+    : { ok: true, text: `يتبقى لك ${fmt(remaining)} ر.س شهرياً بعد الالتزامات` });
+  reasons.push(m.annualIncrease >= 0.10
+    ? { ok: false, text: `زيادة 10% سنوياً ترفع الإيجار إلى ${fmt(years[2])} ر.س خلال 3 سنوات` }
+    : { ok: true, text: `الزيادة السنوية ضمن المعتاد` });
+
+  return { housing, dti, remaining, upfront, penalty, years, score, level, verdict, reasons, rent, totalObl };
+}
+
+
+// عبء الدين (DBR) حسب حدود ساما
+
+function computeFinance(income, otherObligations, m) {
   const installment = m.monthlyInstallment;
   const burden = installment / income;
   const totalObl = otherObligations + installment;
@@ -326,6 +817,44 @@ function computeFinancials(income, otherObligations, m) {
   return { burden, dbr, remaining, upfront, earlySettle, score, level, verdict, reasons, installment, totalObl, totalCost: m.totalCost };
 }
 
+
+// تركيز رأس المال + فجوة الوعد مقابل الواقع
+
+function computeInvest(netWorth, investAmount, m) {
+  const conc = investAmount / netWorth;                  // نسبة التركيز في فرصة واحدة
+  const remaining = netWorth - investAmount;             // السيولة المتبقية
+  const expReturnSar = investAmount * m.realisticReturn; // عائد واقعي سنوي تقريبي (ر.س)
+  // نسبة الرسوم من الأرباح الواقعية المتوقعة (ثابتة بالنسبة، لا تتأثر بالمبلغ)
+  const grow = Math.pow(1 + m.realisticReturn, 3) - 1;
+  const feeRatio = grow > 0 ? (m.mgmtFee * 3 + grow * m.perfFee) / grow : 0;
+
+  let score = 100;
+  score -= Math.max(0, conc - 0.15) * 350;               // تركيز فوق 15% في فرصة عالية المخاطر
+  score -= Math.max(0, (m.promisedReturn - m.realisticReturn) - 0.05) * 120; // وعد مبالغ فيه
+  if (remaining < netWorth * 0.40) score -= 15;          // سيولة متبقية ضعيفة
+  score = Math.round(Math.max(3, Math.min(99, score)));
+  const level = score >= 70 ? "green" : score >= 45 ? "yellow" : "red";
+  const verdict = level === "green" ? "مناسبة للاستثمار" : level === "yellow" ? "استثمر بحذر" : "غير مناسبة حالياً";
+
+  const reasons = [];
+  reasons.push(conc > 0.30
+    ? { ok: false, text: `هذا الاستثمار يمثّل ${pct(conc)} من ثروتك — تركيز مرتفع جداً في فرصة واحدة عالية المخاطر` }
+    : conc > 0.15
+      ? { ok: null, text: `يمثّل ${pct(conc)} من ثروتك — أعلى من الحد الموصى به للفرص عالية المخاطر (≤15%)` }
+      : { ok: true, text: `يمثّل ${pct(conc)} من ثروتك — ضمن حدود التنويع الصحي (≤15%)` });
+  reasons.push(remaining < netWorth * 0.40
+    ? { ok: false, text: `لن يتبقى لك سوى ${fmt(remaining)} ر.س — سيولة غير كافية لو خسرت رأس المال` }
+    : { ok: true, text: `يتبقى لك ${fmt(remaining)} ر.س سائلة لو لم تسترد رأس المال` });
+  reasons.push((m.promisedReturn - m.realisticReturn) > 0.08
+    ? { ok: false, text: `عائد موعود ${pct1(m.promisedReturn)} مقابل واقع السوق ~${pct1(m.realisticReturn)} — وعد مبالغ فيه يرفع شبهة المخاطرة العالية أو الاحتيال` }
+    : { ok: true, text: `العائد الموعود قريب من واقع السوق` });
+  reasons.push(m.lockupYears >= 3
+    ? { ok: null, text: `أموالك محبوسة ${m.lockupYears} سنوات — لا يمكن سحبها عند الحاجة الطارئة دون غرامة` }
+    : { ok: true, text: `فترة الحظر ضمن المعتاد` });
+
+  return { conc, remaining, investAmount, netWorth, expReturnSar, feeRatio, score, level, verdict, reasons, promisedReturn: m.promisedReturn, realisticReturn: m.realisticReturn };
+}
+
 // ===================== APP =====================
 export default function App() {
   const [page, setPage] = useState("home");          // home | upload | analyzing | dashboard
@@ -333,6 +862,8 @@ export default function App() {
   const [contractType, setContractType] = useState("");
   const [text, setText] = useState("");
   const [analyzeStep, setAnalyzeStep] = useState(0);   // how many agents finished (0..6)
+  const [analysis, setAnalysis] = useState(null);      // نتيجة الباكند الحقيقية — null = ما وصلنا شي
+  const [analyzeError, setAnalyzeError] = useState(""); // نص الخطأ لو فشل الطلب
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [expandedRisk, setExpandedRisk] = useState(0);
   const [expandedHidden, setExpandedHidden] = useState(0);
@@ -342,22 +873,68 @@ export default function App() {
   const [finReady, setFinReady] = useState(false);
   const [finMode, setFinMode] = useState(null);       // null | "bank" | "manual"
   const [connecting, setConnecting] = useState(false);
-  const [income, setIncome] = useState(13000);
-  const [obligations, setObligations] = useState(2600);
+  const [income, setIncome] = useState(CONTRACTS.rental.defaults.income);
+  const [obligations, setObligations] = useState(CONTRACTS.rental.defaults.obligations);
 
   const fileRef = useRef();
-  const d = SAMPLE_ANALYSIS;
-  const fin = computeFinancials(income, obligations, d.money);
+  // العقد الفعّال — منه تتفرّع البيانات والنصوص والحسابات واللوحة المالية
+  const C = CONTRACTS[contractType] || CONTRACTS.rental;
+  const { copy } = C;
+  const agents = agentsFor(copy);
+  // التحليل الحقيقي من الباكند، وإن ما وصل نرجع للبيانات التجريبية بدل ما تنكسر الشاشة
+  const d = analysis || C.data;
+  const fin = C.compute(income, obligations, d.money);
 
-  const reset = () => { setPage("upload"); setText(""); setAnalyzeStep(0); setSection("overview"); setSidebarOpen(false); };
+  // تبديل نوع العقد يصفّر النص والأرقام ويرجّع افتراضيات العقد الجديد
+  const pickContract = (id) => {
+    setContractType(id);
+    setText("");
+    setIncome(CONTRACTS[id].defaults.income);
+    setObligations(CONTRACTS[id].defaults.obligations);
+    setFinReady(false);
+    setFinMode(null);
+    setAnalysis(null);      // تحليل عقد قديم على نوع جديد = أرقام غلط
+    setAnalyzeError("");
+  };
 
-  const handleAnalyze = () => {
-    if (!text.trim()) return;
+  const reset = () => { setPage("upload"); setText(""); setAnalyzeStep(0); setSection("overview"); setSidebarOpen(false); setAnalysis(null); setAnalyzeError(""); };
+
+  // تحليل حقيقي: الوكلاء يتقدّمون بالتوازي مع الطلب، وآخر وكيل يخلص لما يوصل الرد
+  const handleAnalyze = async () => {
+    if (!text.trim() || !contractType) return;
     setPage("analyzing");
     setAnalyzeStep(0);
-    const per = 540; // ms per agent
-    AGENTS.forEach((_, i) => setTimeout(() => setAnalyzeStep(i + 1), per * (i + 1)));
-    setTimeout(() => { setPage("dashboard"); setSection("overview"); }, per * AGENTS.length + 700);
+    setAnalysis(null);
+    setAnalyzeError("");
+
+    // نوقّف عند الوكيل قبل الأخير حتى ما تكتمل الحركة والرد ما وصل
+    const per = 540;
+    const timers = AGENTS.slice(0, -1).map((_, i) =>
+      setTimeout(() => setAnalyzeStep((s) => Math.max(s, i + 1)), per * (i + 1))
+    );
+
+    try {
+      const res = await fetch(`${API_URL}/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim(), type: contractType }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "تعذّر تحليل العقد.");
+      setAnalysis(json);
+    } catch (err) {
+      // الخادم واقف أو الشبكة مقطوعة → نكمل بالبيانات التجريبية مع تنبيه واضح
+      setAnalysis(null);
+      setAnalyzeError(
+        err.message === "Failed to fetch"
+          ? "ما قدرنا نوصل للخادم — هذا تحليل تجريبي وليس تحليل عقدك."
+          : `${err.message} — نعرض تحليلاً تجريبياً.`
+      );
+    } finally {
+      timers.forEach(clearTimeout);
+      setAnalyzeStep(AGENTS.length);
+      setTimeout(() => { setPage("dashboard"); setSection("overview"); }, 500);
+    }
   };
 
   const handleFile = (e) => {
@@ -378,7 +955,7 @@ export default function App() {
   const connectBank = () => {
     setConnecting(true);
     setFinMode("bank");
-    setTimeout(() => { setIncome(13000); setObligations(2600); setConnecting(false); setFinReady(true); }, 1900);
+    setTimeout(() => { setIncome(C.defaults.income); setObligations(C.defaults.obligations); setConnecting(false); setFinReady(true); }, 1900);
   };
 
   const baseStyle = {
@@ -489,7 +1066,7 @@ export default function App() {
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, margin: 0 }}>كل وكيل متخصص في زاوية مختلفة من عقدك</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
-          {AGENTS.map((a) => (
+          {agents.map((a) => (
             <div key={a.id} className="hover-lift" style={{
               background: "rgba(255,255,255,0.03)", border: `1px solid ${a.color}26`,
               borderRadius: 16, padding: 20, textAlign: "right", position: "relative",
@@ -531,9 +1108,9 @@ export default function App() {
             <div style={labelStyle}>نوع العقد</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {CONTRACT_TYPES.map((t) => {
-                const on = contractType === t.label;
+                const on = contractType === t.id;
                 return (
-                  <button key={t.label} onClick={() => setContractType(t.label)} style={{
+                  <button key={t.id} onClick={() => pickContract(t.id)} style={{
                     display: "flex", alignItems: "center", gap: 8,
                     background: on ? "linear-gradient(135deg,#6B3CFF,#B03CFF)" : "rgba(107,60,255,0.1)",
                     border: on ? "1px solid #6B3CFF" : "1px solid rgba(107,60,255,0.3)",
@@ -558,7 +1135,7 @@ export default function App() {
 
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
             <button onClick={() => fileRef.current.click()} disabled={!contractType} style={fileBtn}><Icon name="upload" size={16} color="rgba(255,255,255,0.6)" /> رفع ملف</button>
-            <button onClick={() => setText(SAMPLE_CONTRACT_TEXT)} disabled={!contractType} style={fileBtn}><Icon name="file" size={16} color="rgba(255,255,255,0.6)" /> تجربة بعقد جاهز</button>
+            <button onClick={() => setText(C.text)} disabled={!contractType} style={fileBtn}><Icon name="file" size={16} color="rgba(255,255,255,0.6)" /> تجربة بعقد جاهز</button>
           </div>
           <input ref={fileRef} type="file" accept=".txt" style={{ display: "none" }} onChange={handleFile} />
 
@@ -574,7 +1151,7 @@ export default function App() {
         <div style={{ marginTop: 30 }}>
           <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", marginBottom: 14 }}>الوكلاء الذين سيحللون عقدك</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {AGENTS.map((a) => (
+            {agents.map((a) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", border: `1px solid ${a.color}22`, borderRadius: 12, padding: "12px 14px" }}>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: `${a.color}18`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Icon name={a.icon} size={15} color={a.color} />
@@ -611,7 +1188,7 @@ export default function App() {
           <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13.5, margin: "0 0 26px", textAlign: "center" }}>نفحص كل بند، نكشف المخفي، ونحسب الكلفة بالريال</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 22 }}>
-            {AGENTS.map((a, i) => {
+            {agents.map((a, i) => {
               const done = i < analyzeStep;
               const active = i === analyzeStep;
               return (
@@ -652,19 +1229,20 @@ export default function App() {
   }
 
   // ===================== DASHBOARD =====================
-  const activeAgent = AGENTS.find((a) => a.id === section);
+  const activeAgent = agents.find((a) => a.id === section);
   const concerns = d.risks.filter((r) => r.level !== "green").length;
-  const badMarket = d.marketComparison.filter((m) => m.status === "bad").length;
+  const mkt = marketStats(d);
   const railStats = {
     risks: `${concerns} مخاطر`,
     hidden: `${d.hiddenItems.length} بنود`,
-    market: `${badMarket}/${d.marketComparison.length} أسوأ`,
+    market: mkt.comparable === 0 ? "بلا مرجع سوق" : `${mkt.bad}/${mkt.comparable} أسوأ`,
     future: `${d.futureTimeline.length} مراحل`,
     financial: null,
     object: `${d.objectionLetters.length} رسائل`,
   };
 
   return (
+    <ContractCtx.Provider value={C}>
     <div style={baseStyle}>
       {FontAndStyles}
 
@@ -690,7 +1268,7 @@ export default function App() {
           <RailItem active={section === "overview"} onClick={() => { setSection("overview"); setSidebarOpen(false); }}
             color="#8B6CFF" icon="grid" name="نظرة عامة" stat="ملخص" />
           <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.32)", padding: "10px 10px 6px", letterSpacing: 0.4 }}>الوكلاء الستة</div>
-          {AGENTS.map((a) => (
+          {agents.map((a) => (
             <RailItem key={a.id} active={section === a.id} onClick={() => { setSection(a.id); setSidebarOpen(false); }}
               color={a.color} icon={a.icon} name={a.name}
               stat={a.id === "financial" && finReady ? null : railStats[a.id]}
@@ -723,6 +1301,14 @@ export default function App() {
         </div>
 
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "22px 20px 70px" }}>
+          {/* تنبيه صريح: البيانات المعروضة تجريبية وليست تحليل عقد المستخدم */}
+          {analyzeError && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,184,0,0.10)", border: "1px solid rgba(255,184,0,0.32)", borderRadius: 12, padding: "11px 14px", marginBottom: 16 }}>
+              <Icon name="warning" size={16} color="#FFC847" />
+              <span style={{ color: "#FFC847", fontSize: 13, fontWeight: 700 }}>{analyzeError}</span>
+            </div>
+          )}
+
           {section !== "overview" && activeAgent && (
             <div className="fade-section" key={"h-" + section} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
               <div style={{ width: 50, height: 50, borderRadius: 14, background: `${activeAgent.color}18`, border: `1px solid ${activeAgent.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -745,7 +1331,7 @@ export default function App() {
             {section === "market" && <MarketPanel d={d} />}
             {section === "future" && <FuturePanel d={d} />}
             {section === "financial" && (
-              <FinancialPanel
+              <C.Financial
                 d={d} fin={fin} finReady={finReady} finMode={finMode} connecting={connecting}
                 income={income} obligations={obligations}
                 setIncome={setIncome} setObligations={setObligations}
@@ -758,6 +1344,7 @@ export default function App() {
         </div>
       </div>
     </div>
+    </ContractCtx.Provider>
   );
 }
 
@@ -787,8 +1374,11 @@ function RailItem({ active, onClick, color, icon, name, stat, dotLevel, isNew })
   );
 }
 
+
 // ===================== OVERVIEW =====================
 function Overview({ d, fin, finReady, goto }) {
+  const { copy } = useContract();
+  const agents = agentsFor(copy);
   const overallLevel = !finReady ? d.safetyLevel
     : (d.safetyLevel === "red" || fin.level === "red") ? "red"
       : (d.safetyLevel === "yellow" || fin.level === "yellow") ? "yellow" : "green";
@@ -819,16 +1409,16 @@ function Overview({ d, fin, finReady, goto }) {
         {finReady ? (
           <div>
             <div style={{ fontSize: 22, fontWeight: 900, color: levelColors[overallLevel].text, marginBottom: 8 }}>
-              {overallLevel === "green" ? "التمويل مناسب لك" : overallLevel === "yellow" ? "وقّع بحذر بعد التفاوض" : "لا يُنصح بالتوقيع حالياً"}
+              {copy.verdict[overallLevel]}
             </div>
             <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13.5, lineHeight: 1.8, margin: 0 }}>
-              قانونياً: {d.safetyLevel === "green" ? "بنود مقبولة" : "توجد بنود تستحق الاعتراض"}. مالياً: {fin.verdict} — القسط يمثل {pct(fin.burden)} من دخلك وعبء الدين {pct(fin.dbr)}.
+              قانونياً: {copy.legalNote(d)}. مالياً: {fin.verdict} — {copy.finNote(fin)}
             </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13.5, lineHeight: 1.7, margin: 0, maxWidth: 460 }}>
-              لرؤية التوصية الكاملة، أكمل تحليل <b style={{ color: "#0EC9E0" }}>الأثر المالي</b> — أضف دخلك ليحسب مجهر إذا كان هذا التمويل يناسب وضعك.
+              لرؤية التوصية الكاملة، أكمل تحليل <b style={{ color: "#0EC9E0" }}>الأثر المالي</b> — {copy.cta}
             </p>
             <button onClick={() => goto("financial")} className="hover-lift" style={{ background: "rgba(14,201,224,0.12)", border: "1px solid rgba(14,201,224,0.4)", color: "#0EC9E0", borderRadius: 12, padding: "11px 18px", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
               <Icon name="wallet" size={16} color="#0EC9E0" /> احسب الأثر المالي
@@ -838,7 +1428,7 @@ function Overview({ d, fin, finReady, goto }) {
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
-        {AGENTS.map((a) => (
+        {agents.map((a) => (
           <button key={a.id} onClick={() => goto(a.id)} className="hover-lift" style={{
             textAlign: "right", background: "rgba(255,255,255,0.03)", border: `1px solid ${a.color}26`,
             borderRadius: 14, padding: 16, cursor: "pointer",
@@ -948,7 +1538,9 @@ function ClauseDetail({ original, translated, c, altLabel = "الترجمة ال
   );
 }
 
+
 // ===================== MARKET =====================
+// Reusable cumulative-cost line chart (عقدك vs السوق العادل + الفرق)
 function LegendDot({ color, label, dash }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "rgba(255,255,255,0.6)" }}>
@@ -958,14 +1550,28 @@ function LegendDot({ color, label, dash }) {
   );
 }
 
-function CostChart({ data, title = "كيف تتراكم التكلفة (مقارنة بتمويل عادل)" }) {
+function CostChart({ data, title }) {
+  const { chart } = useContract().copy;
+  title = title ?? chart.title;
+  // العقد ما فيه مدة أو أرقام كافية → Math.max على مصفوفة فاضية يعطي -Infinity ويكسر المخطط
+  if (!data || !data.labels?.length || !data.yours?.length) {
+    return (
+      <Card>
+        <span style={{ fontWeight: 800, fontSize: 14.5 }}>{title}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 12 }}>
+          <Icon name="info" size={16} color="rgba(255,255,255,0.45)" />
+          <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 13 }}>العقد ما يحتوي أرقاماً كافية لبناء توقّع التكلفة.</span>
+        </div>
+      </Card>
+    );
+  }
   const W = 600, H = 270, PL = 46, PR = 46, PT = 40, PB = 28;
   const n = data.labels.length;
   const plotW = W - PL - PR, plotH = H - PT - PB;
   const allVals = [...data.yours, ...data.market];
   const vMax = Math.max(...allVals), vMin = Math.min(...allVals), span = vMax - vMin || 1;
   const top = vMax + span * 0.30, bot = vMin - span * 0.34;
-  const xFor = (i) => (W - PR) - (i / (n - 1)) * plotW;
+  const xFor = (i) => (W - PR) - (i / (n - 1)) * plotW;   // RTL: السنة 1 على اليمين
   const yFor = (v) => PT + ((top - v) / (top - bot)) * plotH;
   const yoursPts = data.yours.map((v, i) => [xFor(i), yFor(v)]);
   const marketPts = data.market.map((v, i) => [xFor(i), yFor(v)]);
@@ -977,9 +1583,9 @@ function CostChart({ data, title = "كيف تتراكم التكلفة (مقار
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 6 }}>
         <span style={{ fontWeight: 800, fontSize: 14.5 }}>{title}</span>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-          <LegendDot color={CY} label="تمويلك" />
-          <LegendDot color="rgba(255,255,255,0.8)" label="تمويل عادل" dash />
-          <LegendDot color={GAP} label="الفرق الذي تدفعه زيادة" />
+          <LegendDot color={CY} label={chart.yours} />
+          <LegendDot color="rgba(255,255,255,0.8)" label={chart.market} dash />
+          <LegendDot color={GAP} label={chart.gap} />
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", overflow: "visible" }} fontFamily="Tajawal, sans-serif">
@@ -1020,35 +1626,60 @@ function CostChart({ data, title = "كيف تتراكم التكلفة (مقار
 }
 
 function MarketPanel({ d }) {
-  const bad = d.marketComparison.filter((m) => m.status === "bad").length;
+  const { copy } = useContract();
+  const { bad, unknown, comparable } = marketStats(d);
+  // ما فيه ولا بند قابل للمقارنة → لا أحمر ولا أخضر، حالة محايدة صريحة
+  const tone = comparable === 0 ? "unknown" : bad >= 2 ? "bad" : "good";
+  const toneCol = { bad: "#FF5C5C", good: "#1FD89E", unknown: "rgba(255,255,255,0.55)" }[tone];
+  const toneBg = { bad: "rgba(255,59,59,0.07)", good: "rgba(0,196,140,0.07)", unknown: "rgba(255,255,255,0.04)" }[tone];
+  const toneBorder = { bad: "rgba(255,59,59,0.25)", good: "rgba(0,196,140,0.25)", unknown: "rgba(255,255,255,0.12)" }[tone];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13.5, lineHeight: 1.8, margin: 0 }}>
-        بنود تمويلك مقابل المعتاد في السوق السعودي — والفرق محسوباً بالريال.
+        {copy.market.intro}
       </p>
 
+      {/* دليل الألوان — الرمادي لازم يكون مفهوماً بدون شرح */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: -4 }}>
+        {["bad", "good", "unknown"].map((k) => (
+          <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "rgba(255,255,255,0.5)" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 3, background: marketColors[k].line, flexShrink: 0 }} />
+            {marketColors[k].label}
+          </span>
+        ))}
+      </div>
+
+      {/* colored comparison table */}
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 460 }}>
             <thead>
               <tr style={{ background: "rgba(255,255,255,0.03)" }}>
                 <th style={thCell}>البند</th>
-                <th style={thCell}>تمويلك</th>
+                <th style={thCell}>{copy.market.col}</th>
                 <th style={thCell}>السوق</th>
                 <th style={thCell}>الفرق</th>
               </tr>
             </thead>
             <tbody>
               {d.marketComparison.map((row, i) => {
-                const isBad = row.status === "bad";
-                const col = isBad ? "#FF6B6B" : "#1FD89E";
+                const isUnknown = row.status === "unknown";
+                const col = (marketColors[row.status] || marketColors.good).line;
+                // المجهول رمادي وبلا خلفية ملوّنة — ما يوحي بحكم ما صار
+                const pill = isUnknown
+                  ? { color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)" }
+                  : { color: col, background: col + "1A", border: `1px solid ${col}33` };
                 return (
                   <tr key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                     <td style={{ ...tdCell, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>{row.item}</td>
-                    <td style={{ ...tdCell, fontWeight: 800, color: col }}>{row.yours}</td>
-                    <td style={{ ...tdCell, color: "rgba(255,255,255,0.6)" }}>{row.market}</td>
+                    <td style={{ ...tdCell, fontWeight: 800, color: isUnknown ? "rgba(255,255,255,0.85)" : col }}>{row.yours}</td>
+                    <td style={{ ...tdCell, color: isUnknown ? "rgba(255,255,255,0.38)" : "rgba(255,255,255,0.6)", fontStyle: isUnknown ? "italic" : "normal" }}>
+                      {isUnknown ? (row.market || "غير متوفر") : row.market}
+                    </td>
                     <td style={tdCell}>
-                      <span style={{ display: "inline-block", fontWeight: 800, fontSize: 12.5, color: col, background: col + "1A", border: `1px solid ${col}33`, borderRadius: 100, padding: "3px 11px", whiteSpace: "nowrap" }}>{row.diff}</span>
+                      <span style={{ display: "inline-block", fontWeight: 800, fontSize: 12.5, borderRadius: 100, padding: "3px 11px", whiteSpace: "nowrap", ...pill }}>
+                        {isUnknown ? (row.diff || "—") : row.diff}
+                      </span>
                     </td>
                   </tr>
                 );
@@ -1058,15 +1689,19 @@ function MarketPanel({ d }) {
         </div>
       </Card>
 
+      {/* cumulative cost line chart */}
       <CostChart data={d.costProjection} />
 
-      <Card style={{ background: bad >= 2 ? "rgba(255,59,59,0.07)" : "rgba(0,196,140,0.07)", border: `1px solid ${bad >= 2 ? "rgba(255,59,59,0.25)" : "rgba(0,196,140,0.25)"}` }}>
+      {/* summary */}
+      <Card style={{ background: toneBg, border: `1px solid ${toneBorder}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Icon name={bad >= 2 ? "warning" : "check"} size={18} color={bad >= 2 ? "#FF5C5C" : "#1FD89E"} />
-          <span style={{ fontWeight: 800, fontSize: 14.5, color: bad >= 2 ? "#FF5C5C" : "#1FD89E" }}>الخلاصة</span>
+          <Icon name={{ bad: "warning", good: "check", unknown: "info" }[tone]} size={18} color={toneCol} />
+          <span style={{ fontWeight: 800, fontSize: 14.5, color: toneCol }}>الخلاصة</span>
         </div>
         <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 13.5, lineHeight: 1.8, margin: "8px 0 0" }}>
-          تمويلك أسوأ في {bad} من {d.marketComparison.length} بنود، والفرق يصل إلى نحو {fmt(d.costProjection.avgPerYear)} ريال سنوياً فوق السوق — وهي بنود قابلة للتفاوض قبل التوقيع.
+          {comparable === 0
+            ? "ما توفرت بيانات سوق كافية لمقارنة بنود هذا العقد — الأرقام أعلاه من العقد نفسه بدون مرجع للمقارنة."
+            : copy.market.summary(d, bad, unknown)}
         </p>
       </Card>
     </div>
@@ -1076,7 +1711,7 @@ function MarketPanel({ d }) {
 const thCell = { textAlign: "right", padding: "12px 16px", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap" };
 const tdCell = { textAlign: "right", padding: "13px 16px", fontSize: 13.5, verticalAlign: "middle" };
 
-// ===================== FUTURE =====================
+
 function FuturePanel({ d }) {
   return (
     <div>
@@ -1106,6 +1741,7 @@ function FuturePanel({ d }) {
   );
 }
 
+
 // ===================== FINANCIAL =====================
 function Divider({ label }) {
   return (
@@ -1118,18 +1754,19 @@ function Divider({ label }) {
 }
 
 function ExposureHero({ exp }) {
+  const { hero } = useContract().copy;
   return (
-    <Card style={{ background: "linear-gradient(135deg, rgba(245,200,75,0.10), rgba(255,255,255,0.02))", border: "1px solid rgba(245,200,75,0.30)" }}>
+    <Card style={{ background: `linear-gradient(135deg, ${hero.tintBg}, rgba(255,255,255,0.02))`, border: `1px solid ${hero.tintBorder}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <Icon name="wallet" size={16} color="#F5C84B" />
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#F5C84B" }}>إجمالي التعرّض المتوقع</span>
+        <Icon name={hero.icon} size={16} color={hero.accent} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: hero.accent }}>{hero.label}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 44, fontWeight: 900, color: "#FFD56A", lineHeight: 1 }}>{fmt(exp.total3y)}</span>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>ريال / 3 سنوات</span>
+        <span style={{ fontSize: 44, fontWeight: 900, color: hero.value, lineHeight: 1 }}>{fmt(hero.amount(exp))}</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{hero.unit}</span>
       </div>
       <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13.5, lineHeight: 1.8, margin: "10px 0 0" }}>
-        بمعدل ~{fmt(exp.avgPerYear)} ريال سنوياً فوق ما يدفعه السوق على تمويل مماثل.
+        {hero.note(exp)}
       </p>
     </Card>
   );
@@ -1146,24 +1783,26 @@ function ScenarioCell({ value, color, label, sub }) {
 }
 
 function ScenarioBar({ exp }) {
+  const { scenarios } = useContract().copy;
   const s = exp.scenarios;
   return (
     <Card>
-      <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 14 }}>سيناريوهات التعرّض</div>
+      <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 14 }}>{scenarios.title}</div>
       <div style={{ height: 12, borderRadius: 100, background: "linear-gradient(90deg, #FF5C5C, #F5C84B 50%, #1FD89E)", marginBottom: 16 }} />
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, textAlign: "center" }}>
-        <ScenarioCell value={s.best} color="#1FD89E" label="أفضل حالة" sub="بلا مفاجآت" />
-        <ScenarioCell value={s.expected} color="#FFD56A" label="المتوقع" sub="على مدى 3 سنوات" />
-        <ScenarioCell value={s.worst} color="#FF5C5C" label="أسوأ حالة" sub="سداد مبكر أو تعثر" />
+        <ScenarioCell value={s.best} color="#1FD89E" label="أفضل حالة" sub={scenarios.best} />
+        <ScenarioCell value={s.expected} color="#FFD56A" label="المتوقع" sub={scenarios.expected} />
+        <ScenarioCell value={s.worst} color="#FF5C5C" label="أسوأ حالة" sub={scenarios.worst} />
       </div>
       <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, lineHeight: 1.7, margin: "14px 0 0" }}>
-        «أسوأ حالة» تفترض سداداً مبكراً بكامل غرامة العقد أو تعثراً يفعّل الرسوم والقيود الائتمانية — تفاصيلها في «تعرّض مشروط» بالأسفل.
+        {scenarios.note}
       </p>
     </Card>
   );
 }
 
 function SourcesBreakdown({ exp }) {
+  const { copy } = useContract();
   const maxY3 = Math.max(...exp.sources.map((s) => s.y3));
   const colorOf = (lvl) => (lvl === "red" ? "#FF6B6B" : lvl === "yellow" ? "#FFC847" : "#1FD89E");
   return (
@@ -1173,7 +1812,7 @@ function SourcesBreakdown({ exp }) {
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", minWidth: 44, textAlign: "left" }}>3 سنوات</span>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", minWidth: 44, textAlign: "left" }}>سنوياً</span>
         </div>
-        <div style={{ fontWeight: 800, fontSize: 14.5 }}>من وين تطلع الفلوس؟</div>
+        <div style={{ fontWeight: 800, fontSize: 14.5 }}>{copy.sourcesTitle}</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {exp.sources.map((s, i) => {
@@ -1236,7 +1875,174 @@ function ConditionalCards({ exp }) {
   );
 }
 
-// تكلفة التمويل الإجمالية + تباين النسبة المعلنة مقابل الفعلية (خاص بعقد التمويل)
+// ===================== اللوحات المالية — واحدة لكل نوع عقد =====================
+
+function RentalFinancialPanel({ d, fin, finReady, finMode, connecting, income, obligations, setIncome, setObligations, setFinMode, connectBank, setFinReady, goto }) {
+  const TEAL = "#0EC9E0";
+  const c = levelColors[fin.level];
+  const exp = d.exposure;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* ===== التعرّض المالي (يظهر دائماً — بلا إدخال) ===== */}
+      <ExposureHero exp={exp} />
+      <ScenarioBar exp={exp} />
+      <CostChart data={d.costProjection} />
+      <SourcesBreakdown exp={exp} />
+      <ConditionalCards exp={exp} />
+
+      {/* ===== القدرة على التحمّل ===== */}
+      <Divider label="هل يناسب وضعك المالي؟" />
+
+      {/* ---- input stage ---- */}
+      {!finReady && (
+      <>
+        <Card>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, lineHeight: 1.85, margin: "0 0 4px" }}>
+            عشان نعرف إذا هذا العقد يناسب وضعك، نحتاج نفهم دخلك والتزاماتك. اختر الطريقة الأنسب لك:
+          </p>
+        </Card>
+
+        {!finMode && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 14 }}>
+            <ChoiceCard color={TEAL} icon="bank" title="ربط حساب بنكي" desc="نقرأ دخلك والتزاماتك المتكررة تلقائياً من كشف حسابك" badge="الأسرع" onClick={connectBank} />
+            <ChoiceCard color="#8B6CFF" icon="pen" title="إدخال يدوي" desc="أدخل دخلك الشهري والتزاماتك بنفسك في خطوة واحدة" onClick={() => setFinMode("manual")} />
+          </div>
+        )}
+
+        {finMode === "bank" && connecting && (
+          <Card style={{ textAlign: "center", padding: "40px 24px" }}>
+            <div style={{ width: 56, height: 56, margin: "0 auto 18px", borderRadius: "50%", border: `3px solid ${TEAL}33`, borderTopColor: TEAL, animation: "spin .9s linear infinite" }} />
+            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 6 }}>جاري الربط الآمن مع البنك...</div>
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13 }}>نقرأ كشف الحساب لتحديد الدخل والالتزامات</div>
+          </Card>
+        )}
+
+        {finMode === "manual" && (
+          <Card>
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              <SliderField label="الدخل الشهري الصافي" value={income} setValue={setIncome} min={3000} max={40000} step={500} color={TEAL} />
+              <SliderField label="التزاماتك الشهرية الحالية (قروض، أقساط، إيجار آخر)" value={obligations} setValue={setObligations} min={0} max={25000} step={250} color="#8B6CFF" />
+              <button onClick={() => setFinReady(true)} className="hover-lift" style={{ background: `linear-gradient(135deg, ${TEAL}, #12A8C4)`, border: "none", color: "#04222A", fontWeight: 900, fontSize: 16, borderRadius: 12, padding: "14px", cursor: "pointer", boxShadow: `0 8px 28px ${TEAL}44` }}>
+                حلّل قدرتي المالية
+              </button>
+            </div>
+          </Card>
+        )}
+
+      </>
+      )}
+
+      {/* ---- result stage ---- */}
+      {finReady && (
+      <>
+        {/* verdict hero */}
+        <Card style={{ background: `linear-gradient(135deg, ${c.bg}14, ${TEAL}0A)`, border: `1px solid ${c.bg}38` }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            {finMode === "bank" && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: TEAL + "1A", border: `1px solid ${TEAL}33`, color: TEAL, fontSize: 11, fontWeight: 700, borderRadius: 100, padding: "3px 10px", marginBottom: 10 }}>
+                <Icon name="bank" size={12} color={TEAL} /> مرتبط بحساب بنكي (محاكاة)
+              </span>
+            )}
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 4 }}>هل توقّع هذا العقد؟</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: c.text, lineHeight: 1.15 }}>{fin.verdict}</div>
+            <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13.5, lineHeight: 1.8, margin: "10px 0 0", maxWidth: 420 }}>
+              بناءً على دخل {fmt(income)} ر.س، يمثّل التزام هذا العقد {pct(fin.housing)} من دخلك، ومجموع التزاماتك سيصبح {pct(fin.dti)}.
+            </p>
+          </div>
+          <ScoreMeter score={fin.score} level={fin.level} size={150} />
+        </div>
+      </Card>
+
+      {/* live adjust */}
+      <Card>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <Icon name="trending" size={16} color={TEAL} />
+          <span style={{ fontWeight: 800, fontSize: 14.5 }}>جرّب أرقامك — التوصية تتغير لحظياً</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <SliderField label="الدخل الشهري الصافي" value={income} setValue={setIncome} min={3000} max={40000} step={500} color={TEAL} />
+          <SliderField label="التزاماتك الشهرية الحالية" value={obligations} setValue={setObligations} min={0} max={25000} step={250} color="#8B6CFF" />
+        </div>
+      </Card>
+
+      {/* ratio meters */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+        <RatioCard title="نسبة الإيجار من الدخل" value={fin.housing} threshold={0.30} thresholdLabel="السقف 30%" good={fin.housing <= 0.30} color={TEAL} />
+        <RatioCard title="نسبة إجمالي الالتزامات" value={fin.dti} threshold={0.40} thresholdLabel="الآمن 40%" good={fin.dti <= 0.40} color="#8B6CFF" max={1} />
+      </div>
+
+      {/* cash flow */}
+      <Card>
+        <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 14 }}>التدفق النقدي الشهري</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+          <MoneyTile label="الدخل" value={income} color="#1FD89E" />
+          <MoneyTile label="إيجار هذا العقد" value={-fin.rent} color="#FFC847" />
+          <MoneyTile label="التزامات أخرى" value={-(fin.totalObl - fin.rent)} color="#B08CFF" />
+          <MoneyTile label="المتبقي لك" value={fin.remaining} color={fin.remaining < income * 0.25 ? "#FF5C5C" : "#0EC9E0"} strong />
+        </div>
+        <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <InfoPill label="دفعة التوقيع (إيجار + تأمين)" value={`${fmt(fin.upfront)} ر.س`} />
+          <InfoPill label="غرامة الخروج المبكر" value={`${fmt(fin.penalty)} ر.س`} danger />
+        </div>
+      </Card>
+
+      {/* projection */}
+      <Card>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <Icon name="calendar" size={15} color="#FFC847" />
+          <span style={{ fontWeight: 800, fontSize: 14.5 }}>توقّع الإيجار مع الزيادة السنوية 10%</span>
+        </div>
+        <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12.5, margin: "0 0 14px" }}>كم سيكلفك الإيجار شهرياً خلال السنوات الثلاث القادمة</p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 14, height: 150 }}>
+          {fin.years.map((y, i) => {
+            const maxY = Math.max(...fin.years);
+            const h = (y / maxY) * 100;
+            return (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, height: "100%", justifyContent: "flex-end" }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>{fmt(y)}</div>
+                <div style={{ width: "100%", maxWidth: 70, height: `${h}%`, background: `linear-gradient(180deg, #FFC847, #FF9F1C)`, borderRadius: "8px 8px 0 0", transition: "height .7s cubic-bezier(.4,0,.2,1)", boxShadow: "0 0 14px rgba(255,200,71,0.3)" }} />
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>السنة {i + 1}</div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* reasons */}
+      <Card>
+        <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 14 }}>لماذا هذه التوصية؟</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {fin.reasons.map((r, i) => {
+            const col = r.ok === true ? "#1FD89E" : r.ok === false ? "#FF5C5C" : "#FFC847";
+            const ic = r.ok === true ? "check" : r.ok === false ? "x" : "info";
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 11, background: col + "0F", border: `1px solid ${col}26`, borderRadius: 10, padding: "11px 13px" }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: col + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                  <Icon name={ic} size={13} color={col} />
+                </div>
+                <span style={{ fontSize: 13.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.65 }}>{r.text}</span>
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={() => goto("object")} className="hover-lift" style={{ marginTop: 16, width: "100%", background: "rgba(60,143,255,0.1)", border: "1px solid rgba(60,143,255,0.35)", color: "#5C9FFF", borderRadius: 12, padding: "12px", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Icon name="pen" size={15} color="#5C9FFF" /> اطلب رسالة اعتراض على القيمة المالية
+        </button>
+      </Card>
+
+        <button onClick={() => { setFinReady(false); setFinMode(null); }} style={{ ...ghostBtn, alignSelf: "center", padding: "9px 18px" }}>
+          إعادة إدخال البيانات المالية
+        </button>
+      </>
+      )}
+
+      <PrivacyNote />
+    </div>
+  );
+}
+
 function FinanceCostCard({ m }) {
   const principalPct = (m.loanAmount / m.totalRepay) * 100;
   const costPct = 100 - principalPct;
@@ -1287,7 +2093,7 @@ function FinanceCostCard({ m }) {
   );
 }
 
-function FinancialPanel({ d, fin, finReady, finMode, connecting, income, obligations, setIncome, setObligations, setFinMode, connectBank, setFinReady, goto }) {
+function FinanceFinancialPanel({ d, fin, finReady, finMode, connecting, income, obligations, setIncome, setObligations, setFinMode, connectBank, setFinReady, goto }) {
   const TEAL = "#0EC9E0";
   const c = levelColors[fin.level];
   const exp = d.exposure;
@@ -1424,6 +2230,184 @@ function FinancialPanel({ d, fin, finReady, finMode, connecting, income, obligat
   );
 }
 
+function ReturnRealityCard({ m }) {
+  const gap3y = Math.round(m.investmentAmount * (Math.pow(1 + m.promisedReturn, 3) - Math.pow(1 + m.realisticReturn, 3)));
+  return (
+    <Card>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <Icon name="percent" size={15} color="#FFC847" />
+        <span style={{ fontWeight: 800, fontSize: 14.5 }}>تشريح العائد الموعود</span>
+      </div>
+      <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12.5, margin: "0 0 16px" }}>
+        تضع {fmt(m.investmentAmount)} ر.س في فرصة تعِد بـ {pct1(m.promisedReturn)} سنوياً «مضمونة»
+      </p>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "stretch" }}>
+        <div style={{ flex: 1, minWidth: 140, background: "rgba(255,59,59,0.08)", border: "1px solid rgba(255,59,59,0.28)", borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>العائد الموعود</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#FF5C5C" }}>{pct1(m.promisedReturn)}</div>
+          <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.4)" }}>ما يُروَّج لك «مضمون»</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", color: "rgba(255,255,255,0.4)" }}>
+          <Icon name="arrow" size={20} color="rgba(255,255,255,0.4)" />
+        </div>
+        <div style={{ flex: 1, minWidth: 140, background: "rgba(0,196,140,0.08)", border: "1px solid rgba(0,196,140,0.25)", borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>عائد السوق الواقعي</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#1FD89E" }}>{pct1(m.realisticReturn)}</div>
+          <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.4)" }}>المعقول لفئة مماثلة</div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "rgba(255,184,0,0.08)", border: "1px solid rgba(255,184,0,0.25)", borderRadius: 10, padding: "10px 13px" }}>
+        <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>صافي العائد بعد الرسوم (تقديري)</span>
+        <span style={{ fontSize: 15, fontWeight: 900, color: "#FFC847" }}>~{pct1(m.netAfterFeesReturn)}</span>
+      </div>
+
+      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12.5, lineHeight: 1.8, margin: "14px 0 0" }}>
+        الفرق على {fmt(m.investmentAmount)} ر.س خلال 3 سنوات يقارب <b style={{ color: "#FFD56A" }}>{fmt(gap3y)} ر.س</b> — وعد غير مؤكد. أي «عائد مضمون» بهذه النسبة مؤشر خطر بحد ذاته، خصوصاً من جهة غير مرخّصة.
+      </p>
+    </Card>
+  );
+}
+
+function InvestFinancialPanel({ d, fin, finReady, finMode, connecting, income, obligations, setIncome, setObligations, setFinMode, connectBank, setFinReady, goto }) {
+  const TEAL = "#0EC9E0";
+  const c = levelColors[fin.level];
+  const exp = d.exposure;
+  const netWorth = income, investAmount = obligations; // نعيد استخدام نفس حالة المدخلات: الثروة + مبلغ الاستثمار
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* ===== التعرّض المالي (يظهر دائماً — بلا إدخال) ===== */}
+      <ExposureHero exp={exp} />
+      <ScenarioBar exp={exp} />
+      <ReturnRealityCard m={d.money} />
+      <CostChart data={d.costProjection} />
+      <SourcesBreakdown exp={exp} />
+      <ConditionalCards exp={exp} />
+
+      {/* ===== الملاءمة لوضعك المالي ===== */}
+      <Divider label="هل تناسب وضعك المالي؟" />
+
+      {!finReady && (
+      <>
+        <Card>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, lineHeight: 1.85, margin: "0 0 4px" }}>
+            عشان نعرف إذا هذه الفرصة تناسب وضعك، نحتاج نفهم حجم ثروتك السائلة والمبلغ الذي تنوي استثماره. اختر الطريقة الأنسب لك:
+          </p>
+        </Card>
+
+        {!finMode && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 14 }}>
+            <ChoiceCard color={TEAL} icon="bank" title="ربط حساب بنكي" desc="نقرأ مدخراتك وسيولتك المتاحة تلقائياً من كشف حسابك" badge="الأسرع" onClick={connectBank} />
+            <ChoiceCard color="#8B6CFF" icon="pen" title="إدخال يدوي" desc="أدخل صافي ثروتك السائلة والمبلغ الذي ستستثمره بنفسك" onClick={() => setFinMode("manual")} />
+          </div>
+        )}
+
+        {finMode === "bank" && connecting && (
+          <Card style={{ textAlign: "center", padding: "40px 24px" }}>
+            <div style={{ width: 56, height: 56, margin: "0 auto 18px", borderRadius: "50%", border: `3px solid ${TEAL}33`, borderTopColor: TEAL, animation: "spin .9s linear infinite" }} />
+            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 6 }}>جاري الربط الآمن مع البنك...</div>
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13 }}>نقرأ كشف الحساب لتحديد الثروة السائلة</div>
+          </Card>
+        )}
+
+        {finMode === "manual" && (
+          <Card>
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              <SliderField label="صافي ثروتك السائلة (مدخرات + استثمارات حالية)" value={netWorth} setValue={setIncome} min={20000} max={2000000} step={10000} color={TEAL} />
+              <SliderField label="المبلغ الذي ستستثمره في هذه الفرصة" value={investAmount} setValue={setObligations} min={5000} max={500000} step={5000} color="#8B6CFF" />
+              <button onClick={() => setFinReady(true)} className="hover-lift" style={{ background: `linear-gradient(135deg, ${TEAL}, #12A8C4)`, border: "none", color: "#04222A", fontWeight: 900, fontSize: 16, borderRadius: 12, padding: "14px", cursor: "pointer", boxShadow: `0 8px 28px ${TEAL}44` }}>
+                حلّل ملاءمتها لي
+              </button>
+            </div>
+          </Card>
+        )}
+      </>
+      )}
+
+      {finReady && (
+      <>
+        <Card style={{ background: `linear-gradient(135deg, ${c.bg}14, ${TEAL}0A)`, border: `1px solid ${c.bg}38` }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ flex: 1, minWidth: 240 }}>
+              {finMode === "bank" && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: TEAL + "1A", border: `1px solid ${TEAL}33`, color: TEAL, fontSize: 11, fontWeight: 700, borderRadius: 100, padding: "3px 10px", marginBottom: 10 }}>
+                  <Icon name="bank" size={12} color={TEAL} /> مرتبط بحساب بنكي (محاكاة)
+                </span>
+              )}
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 4 }}>هل تستثمر في هذه الفرصة؟</div>
+              <div style={{ fontSize: 30, fontWeight: 900, color: c.text, lineHeight: 1.15 }}>{fin.verdict}</div>
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13.5, lineHeight: 1.8, margin: "10px 0 0", maxWidth: 420 }}>
+                بناءً على ثروة سائلة {fmt(netWorth)} ر.س، يمثّل هذا الاستثمار {pct(fin.conc)} من ثروتك، ويتبقى لك {fmt(fin.remaining)} ر.س سيولة.
+              </p>
+            </div>
+            <ScoreMeter score={fin.score} level={fin.level} size={150} />
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <Icon name="trending" size={16} color={TEAL} />
+            <span style={{ fontWeight: 800, fontSize: 14.5 }}>جرّب أرقامك — التوصية تتغير لحظياً</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <SliderField label="صافي ثروتك السائلة" value={netWorth} setValue={setIncome} min={20000} max={2000000} step={10000} color={TEAL} />
+            <SliderField label="المبلغ الذي ستستثمره" value={investAmount} setValue={setObligations} min={5000} max={500000} step={5000} color="#8B6CFF" />
+          </div>
+        </Card>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+          <RatioCard title="نسبة التركيز في فرصة واحدة" value={fin.conc} threshold={0.15} thresholdLabel="السقف 15%" good={fin.conc <= 0.15} color={TEAL} max={0.7} />
+          <RatioCard title="نسبة الرسوم من أرباحك المتوقعة" value={fin.feeRatio} threshold={0.30} thresholdLabel="المعقول ≤30%" good={fin.feeRatio <= 0.30} color="#8B6CFF" max={1} />
+        </div>
+
+        <Card>
+          <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 14 }}>أثر الاستثمار على سيولتك</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+            <MoneyTile showPlus label="ثروتك السائلة" value={netWorth} color="#1FD89E" />
+            <MoneyTile showPlus label="المبلغ المستثمر" value={-investAmount} color="#FFC847" />
+            <MoneyTile showPlus label="عائد واقعي متوقع/سنة" value={fin.expReturnSar} color="#0EC9E0" />
+            <MoneyTile showPlus label="يبقى سائلاً" value={fin.remaining} color={fin.remaining < netWorth * 0.40 ? "#FF5C5C" : "#0EC9E0"} strong />
+          </div>
+          <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <InfoPill label="غرامة الخروج المبكر" value={`${fmt(investAmount * d.money.earlyExitPenalty)} ر.س`} danger />
+            <InfoPill label="الحد الأدنى للاستثمار" value={`${fmt(d.money.minInvestment)} ر.س`} />
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontWeight: 800, fontSize: 14.5, marginBottom: 14 }}>لماذا هذه التوصية؟</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {fin.reasons.map((r, i) => {
+              const col = r.ok === true ? "#1FD89E" : r.ok === false ? "#FF5C5C" : "#FFC847";
+              const ic = r.ok === true ? "check" : r.ok === false ? "x" : "info";
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 11, background: col + "0F", border: `1px solid ${col}26`, borderRadius: 10, padding: "11px 13px" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: col + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                    <Icon name={ic} size={13} color={col} />
+                  </div>
+                  <span style={{ fontSize: 13.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.65 }}>{r.text}</span>
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={() => goto("object")} className="hover-lift" style={{ marginTop: 16, width: "100%", background: "rgba(60,143,255,0.1)", border: "1px solid rgba(60,143,255,0.35)", color: "#5C9FFF", borderRadius: 12, padding: "12px", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <Icon name="pen" size={15} color="#5C9FFF" /> اطلب رسالة اعتراض على شروط الفرصة
+          </button>
+        </Card>
+
+        <button onClick={() => { setFinReady(false); setFinMode(null); }} style={{ ...ghostBtn, alignSelf: "center", padding: "9px 18px" }}>
+          إعادة إدخال البيانات المالية
+        </button>
+      </>
+      )}
+
+      <PrivacyNote />
+    </div>
+  );
+}
+
 function ChoiceCard({ color, icon, title, desc, badge, onClick }) {
   return (
     <button onClick={onClick} className="hover-lift" style={{
@@ -1472,8 +2456,8 @@ function RatioCard({ title, value, threshold, thresholdLabel, good, color, max =
   );
 }
 
-function MoneyTile({ label, value, color, strong }) {
-  const sign = value < 0 ? "−" : "";
+function MoneyTile({ label, value, color, strong, showPlus }) {
+  const sign = value < 0 ? "−" : value > 0 && showPlus ? "+" : "";
   return (
     <div style={{ background: strong ? color + "12" : "rgba(255,255,255,0.03)", border: `1px solid ${strong ? color + "40" : "rgba(255,255,255,0.07)"}`, borderRadius: 12, padding: "13px 14px" }}>
       <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 6 }}>{label}</div>
@@ -1505,10 +2489,11 @@ function PrivacyNote() {
 
 // ===================== OBJECTION =====================
 function ObjectPanel({ d, copiedIdx, handleCopy }) {
+  const { copy } = useContract();
   return (
     <div>
       <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13.5, lineHeight: 1.8, marginTop: 0, marginBottom: 16 }}>
-        رسائل اعتراض جاهزة صاغها الوكيل بناءً على ما كشفه باقي الوكلاء. انسخ أي رسالة وأرسلها للجهة الممولة كما هي.
+        رسائل اعتراض جاهزة صاغها الوكيل بناءً على ما كشفه باقي الوكلاء. انسخ أي رسالة وأرسلها {copy.objectionTo} كما هي.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {d.objectionLetters.map((item, i) => {
@@ -1556,6 +2541,25 @@ function Legend() {
 }
 const order = (l) => (l === "red" ? 3 : l === "yellow" ? 2 : 1);
 
+// ===================== مقارنة السوق =====================
+// ثلاث حالات: bad أسوأ من المعتاد · good مطابق أو أفضل · unknown ما توفرت بيانات سوق
+const marketColors = {
+  bad:     { line: "#FF6B6B", label: "أسوأ من السوق" },
+  good:    { line: "#1FD89E", label: "ضمن السوق" },
+  unknown: { line: "rgba(255,255,255,0.42)", label: "غير معروف" },
+};
+
+// عدّاد واحد لكل الشاشات — البنود المجهولة تُستثنى من المقام بدل ما تُحسب لصالح العقد
+const marketStats = (d) => {
+  const rows = d.marketComparison || [];
+  const bad = rows.filter((m) => m.status === "bad").length;
+  const unknown = rows.filter((m) => m.status === "unknown").length;
+  return { bad, unknown, comparable: rows.length - unknown, total: rows.length };
+};
+
+// "بند واحد" / "بندين" / "3 بنود"
+const bandCount = (n) => (n === 1 ? "بند واحد" : n === 2 ? "بندين" : `${n} بنود`);
+
 const ghostBtn = {
   display: "inline-flex", alignItems: "center", gap: 7,
   background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
@@ -1570,20 +2574,4 @@ const fileBtn = {
   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
 };
 
-const SAMPLE_CONTRACT_TEXT = `عقد تمويل شخصي
 
-المادة (1): تمنح الجهة الممولة الطرف الثاني تمويلاً بمبلغ 150,000 ريال يُسدَّد على 60 قسطاً شهرياً متساوياً قدر كل قسط 3,250 ريال.
-
-المادة (2): يُمنح التمويل بنسبة ربح ثابتة قدرها 6% سنوياً تُحتسب على كامل مبلغ التمويل طوال مدة العقد، ويبلغ معدل النسبة السنوي الفعلي (APR) نحو 10.8%.
-
-المادة (3): يُضاف قسط التأمين على التمويل البالغ 6,750 ريال إلى أصل المبلغ الممول وتُحتسب عليه نسبة الربح ذاتها، إضافة إلى رسوم إدارية قدرها 1,500 ريال.
-
-المادة (4): يلتزم الطرف الثاني بتحويل راتبه إلى الجهة الممولة طوال مدة التمويل، ويفوّضها بالخصم المباشر من أي مستحقات أو حسابات تعود له.
-
-المادة (5): في حال رغبة الطرف الثاني في السداد المبكر يلتزم بدفع غرامة تعادل أرباح المدة المتبقية من التمويل.
-
-المادة (6): في حال تأخر الطرف الثاني عن سداد أي قسط يحق للجهة الممولة المطالبة بكامل المبلغ المتبقي دفعة واحدة دون إشعار مسبق، وتُضاف رسوم تأخير عن كل قسط لم يُسدَّد في موعده.
-
-المادة (7): يُرفق بالعقد جدول سداد يوضّح قيمة كل قسط وتاريخ استحقاقه وأصل ما تبقى من المبلغ.
-
-المادة (8): يحق للطرف الثاني العدول عن العقد خلال عشرة أيام من توقيعه دون إبداء أسباب وفق ضوابط الجهة المنظِّمة.`;

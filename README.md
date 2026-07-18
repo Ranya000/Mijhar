@@ -1,20 +1,199 @@
-# Mijhar
+# مجهر (Majhar) — كاشف مخاطر العقود
 
-**Risk Detector for Individuals** — analyzes rental, financing, and investment contracts using six AI agents, and detects risky clauses before signing.
+تطبيق ويب يحلّل العقود الاستهلاكية السعودية (إيجار · تمويل · استثمار) ويكشف المخاطر المالية والقانونية قبل التوقيع، عبر ٦ وكلاء أذكياء مبنيين على Claude.
 
-## How It Works
-
-The user uploads the contract text, and six AI agents analyze it:
-- Risk Detector
-- Market Comparison
-- Future Outlook
-- Hidden Clause Detector
-- Financial Impact
-- Objection Agent
-
-## This Repository
-
-Frontend (React) for three contract types: `RentalContract` · `FinancingContract` · `InvestmentContract`
+مشروع متكامل: **واجهة React (Vite)** + **باكند Express** يكلّم Claude API.
 
 ---
-Part of the Mijhar project — Amad Hackathon 2026
+
+## 🚨 قبل أي شي — احموا الـ `.env`
+
+المستودع Public والـ `.env` كان مرفوع فيه (فاضي الحين فما تسرّب شي). أول ما تحطون المفتاح لازم يكون محمياً:
+
+```bash
+git rm --cached .env backend/.env frontend/.env 2>/dev/null
+git add .gitignore backend/.gitignore frontend/.gitignore
+git commit -m "protect env files"
+git push
+```
+
+الـ `.gitignore` في المشروع الحين يمنع رفع أي `.env`. **لو انرفع مفتاح فعلي بأي لحظة:** بطّلوه من لوحة Anthropic وأصدروا غيره — مسح الملف ما يكفي لأنه يبقى في تاريخ git.
+
+---
+
+## التشغيل السريع
+
+المتطلبات: Node.js 18+ ومفتاح Claude API من https://console.anthropic.com
+
+### ١. الباكند
+
+```bash
+cd backend
+npm install
+cp .env.example .env         # افتحه وحط المفتاح
+npm run dev                  # http://localhost:3000
+```
+
+تأكد إنه شغّال:
+
+```bash
+curl http://localhost:3000/health
+# {"ok":true,"model":"claude-sonnet-5","hasKey":true}
+```
+
+### ٢. الواجهة (بترمنال ثاني)
+
+```bash
+cd frontend
+npm install
+npm run dev                  # http://localhost:5173
+```
+
+افتح http://localhost:5173 والصق نص عقد واختر نوعه واضغط تحليل. بروكسي Vite يوصّل `/api` للباكند تلقائياً بدون أي إعداد.
+
+### تشغيل الاثنين بأمر واحد (اختياري)
+
+من جذر المشروع:
+
+```bash
+npm install                  # ينصّب concurrently فقط
+npm run install:all          # ينصّب تبعيات الباكند والواجهة
+npm run dev                  # يشغّل الخادمين معاً
+```
+
+---
+
+## البنية
+
+```
+majhar/
+├── package.json                منسّق: npm run dev يشغّل الاثنين
+├── .gitignore
+├── README.md
+│
+├── backend/                    ← Express + Claude
+│   ├── index.js                توصيل Express فقط
+│   ├── core.js                 المنطق الخالص (تحقّق · برومت · تحليل)
+│   ├── normalize.js            درع الواجهة ← الأهم
+│   ├── json.js                 استخراج JSON من رد النموذج
+│   ├── prompts/
+│   │   └── majhar_prompt.txt    برومت مجهر
+│   ├── test-json.js            ١٢ اختبار
+│   ├── test-normalize.js       ٣٤ اختبار
+│   ├── test-core.js            السلسلة الكاملة (بمحاكاة، بلا إنترنت)
+│   ├── package.json
+│   ├── .env.example
+│   └── .gitignore
+│
+└── frontend/                   ← React + Vite
+    ├── index.html              RTL + خط عربي
+    ├── vite.config.js          بروكسي /api → الباكند
+    ├── package.json
+    ├── .env.example
+    ├── .gitignore
+    └── src/
+        ├── main.jsx            نقطة الدخول
+        ├── App.jsx             التطبيق كامل (الملف الشامل مربوطاً بالباكند)
+        └── index.css           أساس داكن RTL
+```
+
+---
+
+## كيف يشتغل
+
+```
+المستخدم يلصق العقد
+        ↓
+ App.jsx  ──POST /api/analyze {text, type}──►  الباكند
+                                                   ↓
+                                          core.validateInput()   تحقّق من المدخلات
+                                                   ↓
+                                          core.buildPrompt()     دمج بالبرومت (حماية من $&)
+                                                   ↓
+                                          Claude API             + حشو "{" لبداية الرد
+                                                   ↓
+                                          json.extractJson()     يتحمّل أسوار Markdown ومقدمات
+                                                   ↓
+                                          normalize()            يصلّح كل شكل غلط ← الأهم
+                                                   ↓
+        App.jsx  ◄──── JSON مطابق لشكل الواجهة بالضبط ────────────┘
+                                                   
+        الوكلاء الستة يتحركون بالتوازي، والأخير يخلص لما يوصل الرد
+```
+
+---
+
+## الأجزاء المهمة
+
+### `normalize.js` — درع الواجهة
+
+حتى مع أفضل برومت، النموذج يغلط أحياناً. هذا الملف يمسك الغلط قبل ما يوصل للواجهة:
+
+- `10` → `0.10` تلقائياً (أخطر غلط — نسبة الزيادة، بدونه التطبيق يحسب زيادة ١٠٠٠٪)
+- `"3,800 ر.س"` → `3800`
+- `scenarios: []` → `{best, expected, worst}`
+- `sources: ["نص"]` → `[{label, desc, yr, y3, level, rising}]`
+- `icon: "payment"` → `"wallet"` (الأيقونات المدعومة فقط)
+- `safetyLevel` **يُشتق دائماً من الدرجة** — مستحيل يطلع `42 = green`
+- `apr` و `totalRepay` و `totalCost` تُحسب لو النموذج نساها
+- `costProjection.gaps` يُعاد حسابه دائماً
+- كائن فاضي `{}` أو `null` ما يكسر شي
+
+**حدود التصنيف:** `≥70` أخضر · `35–69` أصفر · `≤34` أحمر. للتغيير: `LEVEL_FROM_SCORE` في `normalize.js` + قسم C في البرومت.
+
+### مقارنة السوق — ثلاث حالات
+
+| الحالة | اللون | يدخل العدّ؟ |
+|---|---|---|
+| `bad` | أحمر — أسوأ من المعتاد | ✅ |
+| `good` | أخضر — مطابق أو أفضل | ✅ |
+| `unknown` | رمادي — ما توفرت بيانات سوق | ❌ يُستثنى |
+
+قبل، الجدول كان ثنائياً وأي شي مو `bad` يطلع أخضر — فبند مجهول يبان «ممتاز». الحين المجهول رمادي ويخرج من العدّ، والبرومت يقول للنموذج صراحة إن `unknown` جواب صحيح مو فشل.
+
+### `core.js` منفصل عن `index.js`
+
+المنطق (تحقّق · برومت · تحليل) في `core.js` ويستقبل عميل Claude كاعتماد — فينكتب له اختبار كامل بمحاكاة بدون Express ولا إنترنت ولا مفتاح. `index.js` صار توصيل Express فقط.
+
+---
+
+## الاختبارات
+
+```bash
+cd backend && npm test
+```
+
+- **test-json** (١٢): استخراج JSON من ردود متسخة — أسوار Markdown، مقدمات، أقواس داخل نص عربي، اقتباسات مهرّبة، ردود مقطوعة
+- **test-normalize** (٣٤): كل تحويلات درع الواجهة، مع تشغيل دوال الحساب الحقيقية من الواجهة على النتيجة (صفر NaN)
+- **test-core**: السلسلة كاملة (تحقّق → برومت → استخراج → تطبيع) عبر عميل محاكى
+
+---
+
+## النشر
+
+**الباكند** (Railway / Render / أي مضيف Node): اضبط `ANTHROPIC_API_KEY`، وشغّل `npm start`.
+
+**الواجهة**: `npm run build` ينتج `dist/` جاهزاً لأي استضافة ثابتة (Vercel / Netlify). اضبط `VITE_API_URL` برابط الباكند المنشور، واضبط `ALLOWED_ORIGIN` في الباكند برابط الواجهة.
+
+---
+
+## إعدادات الباكند (`.env`)
+
+| المتغير | الافتراضي | الوصف |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | — | **مطلوب** — مفتاح Claude |
+| `PORT` | `3000` | منفذ الخادم |
+| `MAJHAR_MODEL` | `claude-sonnet-5` | النموذج (`claude-haiku-4-5` أسرع، `claude-opus-4-8` أدق) |
+| `ALLOWED_ORIGIN` | `*` | رابط الواجهة عند النشر |
+
+---
+
+## ملاحظات
+
+**قيم السوق تقديرية.** البرومت يمنع النموذج صراحة من نسب أي رقم لجهة رسمية أو نظام أو مادة قانونية، ويخليها «المعتاد في السوق». هذا يطابق صياغة الواجهة.
+
+**`realisticReturn` في العقد الاستثماري** مو من العقد — مرجع سوقي متحفّظ (٠٫٠٧–٠٫٠٩) عشان تبان الفجوة بين الوعد والواقع. الـ normalizer يحط ٠٫٠٨ لو النموذج نساه.
+
+**لو الخادم وقف أثناء العرض:** الواجهة ترجع للبيانات التجريبية تلقائياً مع شريط أصفر واضح «هذا تحليل تجريبي وليس تحليل عقدك» — ما ينكسر شي، وما تُعرض بيانات تجريبية على إنها حقيقية.
+
+**التطبيق ليس استشارة قانونية** — أداة معلوماتية تساعد على الفهم قبل التوقيع، والبرومت مضبوط على هذا صراحة.
