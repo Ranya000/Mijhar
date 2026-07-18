@@ -3,7 +3,7 @@
    وكيل، والرمي لو فشل الجميع. بدون Express، بدون شبكة، بدون مفتاح.
    node test-agents.js  */
 
-const { AGENTS, buildAgentPrompt, analyzeAgents } = require("./agents");
+const { AGENTS, buildAgentPrompt, analyzeAgents, analyzeAgentsStream } = require("./agents");
 
 let fails = 0;
 const ok = (label, cond, extra) => {
@@ -119,6 +119,31 @@ function makeClient(opts = {}) {
     await analyzeAgents(makeClient({ fail: AGENTS.map((a) => a.id) }), "mock", "rental", "نص عقد طويل كفاية للتحليل هنا.");
   } catch (e) { threw = e.allFailed === true; }
   ok("فشل كل الوكلاء يرمي allFailed", threw);
+
+  console.log("\n──────── البثّ: onEvent لكل وكيل ────────");
+  const evs = [];
+  const cs = makeClient();
+  const ds = await analyzeAgentsStream(cs, "mock", "rental", "نص عقد طويل كفاية للتحليل هنا.", (e) => evs.push(e));
+  ok("ستة أحداث بالضبط", evs.length === 6, evs.length);
+  ok("كلها ok=true عند النجاح", evs.every((e) => e.ok === true));
+  ok("done يتصاعد 1..6", JSON.stringify(evs.map((e) => e.done)) === JSON.stringify([1, 2, 3, 4, 5, 6]), evs.map((e) => e.done));
+  ok("total=6 بكل حدث", evs.every((e) => e.total === 6));
+  ok("أحداث المرحلة ١ قبل المرحلة ٢", (() => {
+    const first2 = evs.findIndex((e) => e.phase === 2);
+    return evs.slice(0, first2).every((e) => e.phase === 1) && evs.slice(first2).every((e) => e.phase === 2);
+  })(), evs.map((e) => `${e.id}:${e.phase}`));
+  ok("النتيجة النهائية صالحة", typeof ds.safetyScore === "number" && ds.money.monthlyRent === 3800);
+
+  const evs2 = [];
+  const dsFail = await analyzeAgentsStream(makeClient({ fail: ["market"] }), "mock", "rental", "نص عقد طويل كفاية للتحليل هنا.", (e) => evs2.push(e));
+  ok("حدث الوكيل الفاشل ok=false", evs2.find((e) => e.id === "market").ok === false);
+  ok("بقية الأحداث ok=true", evs2.filter((e) => e.id !== "market").every((e) => e.ok === true));
+  ok("النتيجة صامدة رغم الفشل", dsFail._degraded.includes("market"));
+
+  ok("onEvent يرمي لا يكسر التحليل", await (async () => {
+    try { await analyzeAgentsStream(makeClient(), "mock", "rental", "نص عقد طويل كفاية للتحليل هنا.", () => { throw new Error("boom"); }); return true; }
+    catch { return false; }
+  })());
 
   console.log("\n──────── الأنواع الثلاثة تمر بالسلسلة ────────");
   for (const type of ["rental", "finance", "invest"]) {

@@ -8,7 +8,7 @@ const path = require("path");
 
 const { normalize, TYPE_LABEL } = require("./normalize");
 const { extractJson } = require("./json");
-const { analyzeAgents } = require("./agents");
+const { analyzeAgents, analyzeAgentsStream } = require("./agents");
 
 const MAX_TEXT = 60000;      // حرف — أطول من أي عقد استهلاكي واقعي
 const MIN_TEXT = 80;
@@ -89,6 +89,13 @@ function analyzeWithAgents(client, model, type, text) {
   return analyzeAgents(client, model, type, text);
 }
 
+/**
+ * نفس المسار مع بثّ تقدّم كل وكيل عبر onEvent (يستهلكه SSE).
+ */
+function analyzeWithAgentsStream(client, model, type, text, onEvent) {
+  return analyzeAgentsStream(client, model, type, text, onEvent);
+}
+
 /** يحوّل خطأ من SDK إلى رد HTTP منظّم. */
 function errorToResponse(err) {
   if (err.status === 401) return { status: 500, error: "مفتاح الـ API غير صالح." };
@@ -103,6 +110,7 @@ module.exports = {
   validateInput,
   analyze,
   analyzeWithAgents,
+  analyzeWithAgentsStream,
   errorToResponse,
   MAX_TEXT,
   MIN_TEXT,

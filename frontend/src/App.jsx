@@ -899,7 +899,8 @@ export default function App() {
 
   const reset = () => { setPage("upload"); setText(""); setAnalyzeStep(0); setSection("overview"); setSidebarOpen(false); setAnalysis(null); setAnalyzeError(""); };
 
-  // تحليل حقيقي: الوكلاء يتقدّمون بالتوازي مع الطلب، وآخر وكيل يخلص لما يوصل الرد
+  // تحليل حقيقي: نفضّل البثّ (كل وكيل يخلص فعلياً يقدّم الشريط)، ونرجع
+  // للطلب العادي + مؤقتات لو البثّ غير متاح — فالشاشة ما تنكسر أبداً.
   const handleAnalyze = async () => {
     if (!text.trim() || !contractType) return;
     setPage("analyzing");
@@ -907,33 +908,77 @@ export default function App() {
     setAnalysis(null);
     setAnalyzeError("");
 
-    // نوقّف عند الوكيل قبل الأخير حتى ما تكتمل الحركة والرد ما وصل
+    const body = JSON.stringify({ text: text.trim(), type: contractType });
+    const finish = (result, errMsg) => {
+      setAnalysis(result);
+      if (errMsg) setAnalyzeError(errMsg);
+      setAnalyzeStep(AGENTS.length);
+      setTimeout(() => { setPage("dashboard"); setSection("overview"); }, 500);
+    };
+
+    // ---- المحاولة ١: البثّ الحقيقي عبر SSE ----
+    try {
+      const res = await fetch(`${API_URL}/api/analyze/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!res.ok || !res.body) throw new Error("no-stream");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let result = null;
+      let streamErr = "";
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const chunks = buf.split("\n\n");
+        buf = chunks.pop();                 // آخر جزء قد يكون ناقصاً
+        for (const chunk of chunks) {
+          const ev = (chunk.match(/^event: (.+)$/m) || [])[1];
+          const dataRaw = (chunk.match(/^data: (.+)$/m) || [])[1];
+          if (!ev || !dataRaw) continue;
+          let payload; try { payload = JSON.parse(dataRaw); } catch { continue; }
+          if (ev === "agent") setAnalyzeStep((s) => Math.min(AGENTS.length - 1, s + 1));
+          else if (ev === "done") result = payload;
+          else if (ev === "error") streamErr = payload.error || "تعذّر تحليل العقد.";
+        }
+      }
+
+      if (result) return finish(result, "");     // نتيجة حقيقية (حتى لو _degraded، فهي مكتملة)
+      if (streamErr) throw new Error(streamErr);
+      throw new Error("no-stream");               // انتهى البثّ بلا نتيجة → جرّب العادي
+    } catch (_streamFail) {
+      // البثّ غير متاح (خادم أقدم/شبكة) — نكمل بالمسار الاحتياطي أدناه
+    }
+
+    // ---- المحاولة ٢: الطلب العادي + مؤقتات الحركة ----
     const per = 540;
     const timers = AGENTS.slice(0, -1).map((_, i) =>
       setTimeout(() => setAnalyzeStep((s) => Math.max(s, i + 1)), per * (i + 1))
     );
-
     try {
       const res = await fetch(`${API_URL}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text.trim(), type: contractType }),
+        body,
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "تعذّر تحليل العقد.");
-      setAnalysis(json);
+      timers.forEach(clearTimeout);
+      return finish(json, "");
     } catch (err) {
       // الخادم واقف أو الشبكة مقطوعة → نكمل بالبيانات التجريبية مع تنبيه واضح
-      setAnalysis(null);
-      setAnalyzeError(
+      timers.forEach(clearTimeout);
+      return finish(
+        null,
         err.message === "Failed to fetch"
           ? "ما قدرنا نوصل للخادم — هذا تحليل تجريبي وليس تحليل عقدك."
           : `${err.message} — نعرض تحليلاً تجريبياً.`
       );
-    } finally {
-      timers.forEach(clearTimeout);
-      setAnalyzeStep(AGENTS.length);
-      setTimeout(() => { setPage("dashboard"); setSection("overview"); }, 500);
     }
   };
 

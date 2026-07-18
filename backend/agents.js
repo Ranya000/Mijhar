@@ -87,38 +87,50 @@ async function runAgent(client, model, agent, type, text, context) {
 }
 
 /**
- * المنسّق: يشغّل الوكلاء الستة على مرحلتين متوازيتين، يدمج، ثم يطبّع مرة واحدة.
+ * المنسّق الباثّ: يشغّل الوكلاء الستة على مرحلتين متوازيتين، وينادي onEvent
+ * لحظة انتهاء كل وكيل (نجاحاً أو فشلاً) — فتقدر الواجهة تعرض تقدّماً حقيقياً.
+ * يدمج القطع ثم يطبّع مرة واحدة.
  * صامد: فشل وكيل واحد لا يُسقط التحليل (قطعته تُترك فارغة وnormalize يكمّلها)،
- * ويُسجَّل في out._degraded. يرمي فقط لو فشل كل الوكلاء (مفتاح/شبكة) — فترجع
- * الواجهة للبيانات التجريبية.
- * @param {object} client عميل بواجهة { messages: { create } } (Anthropic أو محاكاة)
+ * ويُسجَّل في out._degraded. يرمي فقط لو فشل كل الوكلاء (مفتاح/شبكة).
+ * @param {object}   client   عميل بواجهة { messages: { create } } (Anthropic أو محاكاة)
+ * @param {function} onEvent  تُستدعى بـ { id, label, phase, ok, done, total } لكل وكيل
  * @returns {Promise<object>} كائن مطابق لشكل الواجهة بالضبط
  */
-async function analyzeAgents(client, model, type, text) {
+async function analyzeAgentsStream(client, model, type, text, onEvent = () => {}) {
   const merged = {};
   const failed = [];
+  const total = AGENTS.length;
+  let done = 0;
 
   async function runPhase(agents) {
-    const results = await Promise.allSettled(
-      agents.map((a) => {
+    // كل وكيل يبثّ حدثه لحظة استقراره — لا ننتظر بقية الدفعة
+    await Promise.all(
+      agents.map(async (a) => {
         // سياق المرحلة ٢: القطع المطلوبة من المدموج حتى الآن
         const ctx = {};
         for (const key of a.needs || []) {
           if (merged[key] !== undefined) ctx[key] = merged[key];
         }
-        return runAgent(client, model, a, type, text, ctx);
+        let ok = true;
+        try {
+          const slice = await runAgent(client, model, a, type, text, ctx);
+          Object.assign(merged, slice);
+        } catch (_e) {
+          ok = false;
+          failed.push(a.id);
+        }
+        done++;
+        try {
+          onEvent({ id: a.id, label: a.label, phase: a.phase, ok, done, total });
+        } catch (_e) { /* مستهلك الأحداث ما يكسر التحليل */ }
       })
     );
-    results.forEach((r, i) => {
-      if (r.status === "fulfilled") Object.assign(merged, r.value);
-      else failed.push(agents[i].id);
-    });
   }
 
   await runPhase(AGENTS.filter((a) => a.phase === 1));
   await runPhase(AGENTS.filter((a) => a.phase === 2));
 
-  if (failed.length === AGENTS.length) {
+  if (failed.length === total) {
     const err = new Error("all agents failed");
     err.allFailed = true;
     throw err;
@@ -129,4 +141,9 @@ async function analyzeAgents(client, model, type, text) {
   return out;
 }
 
-module.exports = { AGENTS, buildAgentPrompt, runAgent, analyzeAgents };
+/** نفس المنسّق بلا أحداث — للمسار غير الباثّ (POST /api/analyze). */
+function analyzeAgents(client, model, type, text) {
+  return analyzeAgentsStream(client, model, type, text);
+}
+
+module.exports = { AGENTS, buildAgentPrompt, runAgent, analyzeAgents, analyzeAgentsStream };
