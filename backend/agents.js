@@ -26,12 +26,12 @@ const COMMON = readPrompt("_common.txt");
  * ترتيب المصفوفة = ترتيب العرض؛ `phase` يحدد الدفعة المتوازية.
  */
 const AGENTS = [
-  { id: "financial", label: "الأثر المالي",      phase: 1, maxTokens: 1200, body: readPrompt("financial.txt") },
-  { id: "risk",      label: "كاشف المخاطر",       phase: 1, maxTokens: 3000, body: readPrompt("risk.txt") },
-  { id: "hidden",    label: "كاشف المخفي",        phase: 1, maxTokens: 2000, body: readPrompt("hidden.txt") },
-  { id: "market",    label: "مقارنة السوق",       phase: 2, maxTokens: 2500, needs: ["money"], body: readPrompt("market.txt") },
-  { id: "future",    label: "النظرة المستقبلية",  phase: 2, maxTokens: 3000, needs: ["money"], body: readPrompt("future.txt") },
-  { id: "objection", label: "صائغ الاعتراض",      phase: 2, maxTokens: 2500, needs: ["risks", "hiddenItems"], body: readPrompt("objection.txt") },
+  { id: "financial", label: "الأثر المالي",      phase: 1, maxTokens: 2000, body: readPrompt("financial.txt") },
+  { id: "risk",      label: "كاشف المخاطر",       phase: 1, maxTokens: 4000, body: readPrompt("risk.txt") },
+  { id: "hidden",    label: "كاشف المخفي",        phase: 1, maxTokens: 3000, body: readPrompt("hidden.txt") },
+  { id: "market",    label: "مقارنة السوق",       phase: 2, maxTokens: 3500, needs: ["money"], body: readPrompt("market.txt") },
+  { id: "future",    label: "النظرة المستقبلية",  phase: 2, maxTokens: 5000, needs: ["money"], body: readPrompt("future.txt") },
+  { id: "objection", label: "صائغ الاعتراض",      phase: 2, maxTokens: 4000, needs: ["risks", "hiddenItems"], body: readPrompt("objection.txt") },
 ];
 
 /**
@@ -66,12 +66,7 @@ async function runAgent(client, model, agent, type, text, context) {
   const res = await client.messages.create({
     model,
     max_tokens: agent.maxTokens,
-    temperature: 0,
-    messages: [
-      { role: "user", content: prompt },
-      // حشو بداية الرد يمنع أي مقدمة قبل الـ JSON
-      { role: "assistant", content: "{" },
-    ],
+    messages: [{ role: "user", content: prompt }],
   });
 
   if (res.stop_reason === "max_tokens") {
@@ -83,7 +78,8 @@ async function runAgent(client, model, agent, type, text, context) {
     .map((b) => b.text)
     .join("");
 
-  return extractJson("{" + body);
+  // extractJson يتحمّل أي مقدمة أو أسوار Markdown حول الكائن
+  return extractJson(body);
 }
 
 /**
@@ -112,13 +108,19 @@ async function analyzeAgentsStream(client, model, type, text, onEvent = () => {}
           if (merged[key] !== undefined) ctx[key] = merged[key];
         }
         let ok = true;
-        try {
-          const slice = await runAgent(client, model, a, type, text, ctx);
-          Object.assign(merged, slice);
-        } catch (_e) {
-          ok = false;
-          failed.push(a.id);
+        // محاولتان: يعالج تعثّراً متقطعاً (حدّ معدّل متزامن على حساب جديد مثلاً)
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const slice = await runAgent(client, model, a, type, text, ctx);
+            Object.assign(merged, slice);
+            ok = true;
+            break;
+          } catch (_e) {
+            ok = false;
+            if (attempt < 2) await new Promise((r) => setTimeout(r, 900));
+          }
         }
+        if (!ok) failed.push(a.id);
         done++;
         try {
           onEvent({ id: a.id, label: a.label, phase: a.phase, ok, done, total });
