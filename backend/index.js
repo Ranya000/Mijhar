@@ -8,6 +8,8 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
 
 // المشروع commonjs والحزمة تُصدَّر كـ ESM — هذا السطر يشتغل مع الحالتين
 const SDK = require("@anthropic-ai/sdk");
@@ -24,6 +26,12 @@ const runAnalysis = MULTI_AGENT ? analyzeWithAgents : analyze;
 
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || "*" }));
 app.use(express.json({ limit: "2mb" }));
+
+// نشر برابط واحد: لو الواجهة مبنية (frontend/dist) نقدّمها من نفس الخادم،
+// فتنادي /api على نفس الأصل بلا أي إعداد. محلياً بروكسي Vite يغني عن هذا.
+const DIST = path.join(__dirname, "..", "frontend", "dist");
+const HAS_UI = fs.existsSync(path.join(DIST, "index.html"));
+if (HAS_UI) app.use(express.static(DIST));
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
