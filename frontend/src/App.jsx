@@ -5,6 +5,9 @@ import { useState, useRef, createContext, useContext } from "react";
 // محلياً: اتركه فاضياً ويستخدم مساراً نسبياً (بروكسي Vite يحوّله للباكند).
 // عند النشر: حط VITE_API_URL في frontend/.env.local برابط الخادم الكامل.
 const API_URL = import.meta.env?.VITE_API_URL || "";
+// وضع العرض للمحكمين: ملف HTML واحد بلا خادم. يعرض التحليل النموذجي المدمج
+// مباشرة (بحركة الوكلاء) بدل محاولة الاتصال بخادم غير موجود.
+const DEMO = import.meta.env?.VITE_DEMO === "1";
 
 /* =========================================================
    مجهر — كاشف المخاطر للأفراد
@@ -915,6 +918,16 @@ export default function App() {
       setAnalyzeStep(AGENTS.length);
       setTimeout(() => { setPage("dashboard"); setSection("overview"); }, 500);
     };
+
+    // ---- وضع العرض للمحكمين: بلا خادم، نعرض التحليل النموذجي بحركة الوكلاء ----
+    if (DEMO) {
+      const per = 540;
+      AGENTS.slice(0, -1).forEach((_, i) =>
+        setTimeout(() => setAnalyzeStep((s) => Math.max(s, i + 1)), per * (i + 1))
+      );
+      setTimeout(() => finish(null, ""), per * AGENTS.length + 400);
+      return;
+    }
 
     // ---- المحاولة ١: البثّ الحقيقي عبر SSE ----
     try {
