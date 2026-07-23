@@ -13,6 +13,7 @@ import { CONTRACT_TYPES } from "./data/agents.js";
 import { computeFinancials } from "./lib/financialEngine.js";
 import { levelFromScore } from "./lib/format.js";
 import * as risksAgent from "./agents/risksAgent.js";
+import * as hiddenAgent from "./agents/hiddenAgent.js";
 
 // المدخلات الافتراضية لوكيل الأثر المالي حسب نوع العقد
 const FIN_DEFAULTS = {
@@ -43,13 +44,16 @@ export async function analyzeContract({ contractType, text, financial }) {
   const sources = {};
 
   // ----- تشغيل الوكلاء (بالتوازي) -----
-  const [risksOut] = await Promise.all([
+  const [risksOut, hiddenOut] = await Promise.all([
     risksAgent.run({ contractKey, text, sample }),
+    hiddenAgent.run({ contractKey, text, sample }),
   ]);
   sources.risks = risksOut.source;
+  sources.hidden = hiddenOut.source;
+
+  const hiddenItems = hiddenOut.hiddenItems;
 
   // ----- الأقسام الاحتياطية (ستصبح وكلاء لاحقاً) -----
-  const hiddenItems = sample.hiddenItems;        sources.hidden = "fallback";
   const marketComparison = sample.marketComparison; sources.market = "fallback";
   const futureTimeline = sample.futureTimeline;  sources.future = "fallback";
   const objectionLetters = sample.objectionLetters; sources.object = "fallback";
