@@ -8,6 +8,9 @@
 
 import express from "express";
 import cors from "cors";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import { analyzeContract } from "./orchestrator.js";
 import { AGENTS, CONTRACT_TYPES } from "./data/agents.js";
 import { SAMPLE_ANALYSES, SAMPLE_CONTRACT_TEXTS, resolveContractKey } from "./data/index.js";
@@ -57,6 +60,17 @@ export function createApp() {
       res.status(status).json({ error: err.message || "خطأ داخلي" });
     }
   });
+
+  // ----- تقديم الواجهة المبنية (للنشر كخدمة واحدة) -----
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const distDir = path.resolve(__dirname, "../../frontend/dist");
+  if (fs.existsSync(distDir)) {
+    app.use(express.static(distDir));
+    // أي مسار غير API يرجّع صفحة الواجهة (تطبيق صفحة واحدة)
+    app.get(/^\/(?!api\/).*/, (_req, res) => {
+      res.sendFile(path.join(distDir, "index.html"));
+    });
+  }
 
   return app;
 }

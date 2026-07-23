@@ -1,0 +1,16 @@
+# إعداد النشر على Render (خدمة واحدة: الباكند يقدّم الواجهة)
+# بعد ربط المستودع، يقرأ Render هذا الملف تلقائياً.
+services:
+  - type: web
+    name: mijhar
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      # مفتاح Claude API — يُضاف يدوياً من لوحة تحكم Render (سرّي، لا يوضع في الكود)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # موديل التحليل
+      - key: MIJHAR_MODEL
+        value: claude-sonnet-5
