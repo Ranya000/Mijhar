@@ -10,7 +10,8 @@ import express from "express";
 import cors from "cors";
 import { analyzeContract } from "./orchestrator.js";
 import { AGENTS, CONTRACT_TYPES } from "./data/agents.js";
-import { SAMPLE_CONTRACT_TEXTS } from "./data/index.js";
+import { SAMPLE_ANALYSES, SAMPLE_CONTRACT_TEXTS, resolveContractKey } from "./data/index.js";
+import * as financialAgent from "./agents/financialAgent.js";
 import { isLLMEnabled } from "./lib/llm.js";
 
 export function createApp() {
@@ -29,6 +30,20 @@ export function createApp() {
       sampleTexts: SAMPLE_CONTRACT_TEXTS,
       ai: isLLMEnabled(),
     });
+  });
+
+  // إعادة حساب الأثر المالي فقط (للحاسبة التفاعلية/السلايدر)
+  app.post("/api/financial", (req, res) => {
+    try {
+      const { contractType, financial } = req.body || {};
+      const contractKey = resolveContractKey(contractType);
+      if (!contractKey) return res.status(400).json({ error: "نوع عقد غير مدعوم." });
+      const out = financialAgent.run({ contractKey, sample: SAMPLE_ANALYSES[contractKey], financial });
+      res.json(out.financial);
+    } catch (err) {
+      console.error("[financial]", err);
+      res.status(500).json({ error: err.message || "خطأ داخلي" });
+    }
   });
 
   app.post("/api/analyze", async (req, res) => {
