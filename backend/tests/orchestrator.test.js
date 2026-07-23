@@ -17,6 +17,10 @@ describe("المنظّم analyzeContract", () => {
     expect(r.safetyScore).toBeGreaterThanOrEqual(3);
     expect(r.safetyScore).toBeLessThanOrEqual(99);
     expect(["red", "yellow", "green"]).toContain(r.safetyLevel);
+    // الوكلاء الستة كلهم أبلغوا عن مصدرهم
+    for (const id of ["risks", "hidden", "market", "future", "financial", "object"]) {
+      expect(r.meta.sources, `مصدر مفقود: ${id}`).toHaveProperty(id);
+    }
   });
 
   it("يقبل الاسم العربي لنوع العقد", async () => {
