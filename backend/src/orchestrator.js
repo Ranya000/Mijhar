@@ -1,11 +1,12 @@
 // ============================================================
 // المنظّم (Orchestrator)
-// يستقبل نوع العقد ونصّه، يشغّل الوكلاء الستة (بالتوازي)،
-// ويجمع مخرجاتهم في تقرير تحليل واحد يطابق ما تعرضه الواجهة.
+// يستقبل نوع العقد ونصّه، يشغّل الوكلاء الستة، ويجمع مخرجاتهم
+// في تقرير تحليل واحد يطابق ما تعرضه الواجهة.
 //
-// حالياً (الخطوة 1): وكيل «كاشف المخاطر» فعّال بالذكاء الاصطناعي،
-// وبقية الأقسام تأتي من المحرّك الاحتياطي (بيانات نموذجية) +
-// محرّك الأثر المالي. تُستبدل تباعاً بوكلاء حقيقيين في الخطوات القادمة.
+// خمسة وكلاء يعملون بالتوازي (مخاطر، مخفي، سوق، مستقبل، مالي)،
+// ثم وكيل الاعتراض يعمل بعدهم لأنه يعتمد على مخرجاتهم.
+// كل وكيل نصّي يعمل بالذكاء الاصطناعي (Claude) مع محرّك احتياطي
+// يضمن نتائج كاملة حتى بدون مفتاح API.
 // ============================================================
 
 import { SAMPLE_ANALYSES, resolveContractKey } from "./data/index.js";
@@ -16,6 +17,7 @@ import * as hiddenAgent from "./agents/hiddenAgent.js";
 import * as marketAgent from "./agents/marketAgent.js";
 import * as futureAgent from "./agents/futureAgent.js";
 import * as financialAgent from "./agents/financialAgent.js";
+import * as objectionAgent from "./agents/objectionAgent.js";
 
 /**
  * يشغّل التحليل الكامل لعقد.
@@ -54,13 +56,20 @@ export async function analyzeContract({ contractType, text, financial }) {
   const marketComparison = marketOut.marketComparison;
   const futureTimeline = futureOut.futureTimeline;
 
-  // ----- الأقسام الاحتياطية (ستصبح وكلاء لاحقاً) -----
-  const objectionLetters = sample.objectionLetters; sources.object = "fallback";
-
   // ----- وكيل الأثر المالي (حسابي دائماً) -----
   const finOut = financialAgent.run({ contractKey, sample, financial });
   const fin = finOut.financial;
   sources.financial = finOut.source;
+
+  // ----- وكيل الاعتراض (يعتمد على مخرجات الوكلاء أعلاه) -----
+  const objectionOut = await objectionAgent.run({
+    text, sample,
+    risks: risksOut.risks,
+    hiddenItems,
+    financial: fin,
+  });
+  const objectionLetters = objectionOut.objectionLetters;
+  sources.object = objectionOut.source;
 
   // ----- درجة الأمان الكلية -----
   // تُشتق من عدد المخاطر الحمراء/الصفراء ومن درجة الأثر المالي.
