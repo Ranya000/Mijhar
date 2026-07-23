@@ -15,6 +15,7 @@ import { levelFromScore } from "./lib/format.js";
 import * as risksAgent from "./agents/risksAgent.js";
 import * as hiddenAgent from "./agents/hiddenAgent.js";
 import * as marketAgent from "./agents/marketAgent.js";
+import * as futureAgent from "./agents/futureAgent.js";
 
 // المدخلات الافتراضية لوكيل الأثر المالي حسب نوع العقد
 const FIN_DEFAULTS = {
@@ -45,20 +46,22 @@ export async function analyzeContract({ contractType, text, financial }) {
   const sources = {};
 
   // ----- تشغيل الوكلاء (بالتوازي) -----
-  const [risksOut, hiddenOut, marketOut] = await Promise.all([
+  const [risksOut, hiddenOut, marketOut, futureOut] = await Promise.all([
     risksAgent.run({ contractKey, text, sample }),
     hiddenAgent.run({ contractKey, text, sample }),
     marketAgent.run({ contractKey, text, sample }),
+    futureAgent.run({ contractKey, text, sample }),
   ]);
   sources.risks = risksOut.source;
   sources.hidden = hiddenOut.source;
   sources.market = marketOut.source;
+  sources.future = futureOut.source;
 
   const hiddenItems = hiddenOut.hiddenItems;
   const marketComparison = marketOut.marketComparison;
+  const futureTimeline = futureOut.futureTimeline;
 
   // ----- الأقسام الاحتياطية (ستصبح وكلاء لاحقاً) -----
-  const futureTimeline = sample.futureTimeline;  sources.future = "fallback";
   const objectionLetters = sample.objectionLetters; sources.object = "fallback";
 
   // ----- محرّك الأثر المالي (حسابي دائماً) -----
