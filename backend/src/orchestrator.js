@@ -10,19 +10,12 @@
 
 import { SAMPLE_ANALYSES, resolveContractKey } from "./data/index.js";
 import { CONTRACT_TYPES } from "./data/agents.js";
-import { computeFinancials } from "./lib/financialEngine.js";
 import { levelFromScore } from "./lib/format.js";
 import * as risksAgent from "./agents/risksAgent.js";
 import * as hiddenAgent from "./agents/hiddenAgent.js";
 import * as marketAgent from "./agents/marketAgent.js";
 import * as futureAgent from "./agents/futureAgent.js";
-
-// المدخلات الافتراضية لوكيل الأثر المالي حسب نوع العقد
-const FIN_DEFAULTS = {
-  rental:     { a: 12000, b: 1800 },   // الدخل الشهري، الالتزامات
-  financing:  { a: 13000, b: 2600 },
-  investment: { a: 200000, b: 50000 }, // صافي الثروة، مبلغ الاستثمار
-};
+import * as financialAgent from "./agents/financialAgent.js";
 
 /**
  * يشغّل التحليل الكامل لعقد.
@@ -64,12 +57,10 @@ export async function analyzeContract({ contractType, text, financial }) {
   // ----- الأقسام الاحتياطية (ستصبح وكلاء لاحقاً) -----
   const objectionLetters = sample.objectionLetters; sources.object = "fallback";
 
-  // ----- محرّك الأثر المالي (حسابي دائماً) -----
-  const dflt = FIN_DEFAULTS[contractKey];
-  const a = financial?.a ?? dflt.a;
-  const b = financial?.b ?? dflt.b;
-  const fin = computeFinancials(contractKey, a, b, sample.money);
-  sources.financial = "engine";
+  // ----- وكيل الأثر المالي (حسابي دائماً) -----
+  const finOut = financialAgent.run({ contractKey, sample, financial });
+  const fin = finOut.financial;
+  sources.financial = finOut.source;
 
   // ----- درجة الأمان الكلية -----
   // تُشتق من عدد المخاطر الحمراء/الصفراء ومن درجة الأثر المالي.
@@ -90,7 +81,7 @@ export async function analyzeContract({ contractType, text, financial }) {
     costProjection: sample.costProjection,
     exposure: sample.exposure,
     objectionLetters,
-    financial: { input: { a, b }, ...fin },
+    financial: fin,
     meta: { sources, generatedAt: new Date().toISOString() },
   };
 }
