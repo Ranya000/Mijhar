@@ -15,7 +15,7 @@ import { analyzeContract } from "./orchestrator.js";
 import { AGENTS, CONTRACT_TYPES } from "./data/agents.js";
 import { SAMPLE_ANALYSES, SAMPLE_CONTRACT_TEXTS, resolveContractKey } from "./data/index.js";
 import * as financialAgent from "./agents/financialAgent.js";
-import { isLLMEnabled } from "./lib/llm.js";
+import { isLLMEnabled, activeProvider } from "./lib/llm.js";
 
 export function createApp() {
   const app = express();
@@ -23,7 +23,7 @@ export function createApp() {
   app.use(express.json({ limit: "2mb" }));
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, service: "mijhar-backend", ai: isLLMEnabled() });
+    res.json({ ok: true, service: "mijhar-backend", ai: isLLMEnabled(), provider: activeProvider() });
   });
 
   app.get("/api/meta", (_req, res) => {

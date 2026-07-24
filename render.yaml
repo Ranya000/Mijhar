@@ -8,9 +8,10 @@ services:
     buildCommand: npm run build
     startCommand: npm start
     envVars:
-      # مفتاح Claude API — يُضاف يدوياً من لوحة تحكم Render (سرّي، لا يوضع في الكود)
+      # مفتاح Google Gemini — مجاني بدون بطاقة (aistudio.google.com)
+      # يُضاف يدوياً من لوحة تحكم Render (سرّي، لا يوضع في الكود)
+      - key: GEMINI_API_KEY
+        sync: false
+      # (اختياري) مفتاح Claude — إن وُجد فله الأولوية على Gemini
       - key: ANTHROPIC_API_KEY
         sync: false
-      # موديل التحليل
-      - key: MIJHAR_MODEL
-        value: claude-sonnet-5

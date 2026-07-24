@@ -1,56 +1,88 @@
 // ============================================================
-// عميل Claude — طبقة رقيقة حول Anthropic SDK
-// إن لم يوجد مفتاح API يرجع isEnabled=false فتعمل الوكلاء
-// بالمحرّك الاحتياطي (بيانات نموذجية) دون أي أعطال.
+// طبقة الذكاء الاصطناعي — تدعم مزوّدَين:
+//   • Anthropic Claude  (عند وجود ANTHROPIC_API_KEY)
+//   • Google Gemini     (عند وجود GEMINI_API_KEY — مجاني بدون بطاقة)
+// إن لم يوجد أي مفتاح، تعمل الوكلاء بالمحرّك الاحتياطي دون أعطال.
 // ============================================================
 
-let clientPromise = null;
-
-export function isLLMEnabled() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+// اكتشاف المزوّد النشط (Claude له الأولوية إن توفّر مفتاحه)
+export function activeProvider() {
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (process.env.GEMINI_API_KEY) return "gemini";
+  return null;
 }
 
-async function getClient() {
-  if (!isLLMEnabled()) return null;
-  if (!clientPromise) {
-    clientPromise = import("@anthropic-ai/sdk")
+export function isLLMEnabled() {
+  return activeProvider() !== null;
+}
+
+// ---------- Anthropic (Claude) ----------
+let anthropicPromise = null;
+async function getAnthropic() {
+  if (!anthropicPromise) {
+    anthropicPromise = import("@anthropic-ai/sdk")
       .then(({ default: Anthropic }) => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }))
       .catch((err) => {
         console.warn("[llm] تعذّر تحميل Anthropic SDK:", err.message);
         return null;
       });
   }
-  return clientPromise;
+  return anthropicPromise;
 }
 
-const MODEL = () => process.env.MIJHAR_MODEL || "claude-sonnet-5";
+async function askAnthropic({ system, user, maxTokens }) {
+  const client = await getAnthropic();
+  if (!client) return null;
+  const model = process.env.MIJHAR_MODEL || "claude-sonnet-5";
+  const res = await client.messages.create({
+    model,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: user }],
+  });
+  return res.content?.filter((b) => b.type === "text").map((b) => b.text).join("\n") || "";
+}
+
+// ---------- Google Gemini (مجاني) ----------
+async function askGemini({ system, user, maxTokens }) {
+  const key = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: user }] }],
+      generationConfig: {
+        maxOutputTokens: maxTokens,
+        temperature: 0.4,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Gemini ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("\n") || "";
+}
 
 /**
  * يطلب من النموذج ردّاً على شكل JSON.
- * @param {object} opts
- * @param {string} opts.system  توجيه النظام (دور الوكيل)
- * @param {string} opts.user    محتوى المستخدم (نص العقد + التعليمات)
- * @param {number} [opts.maxTokens]
  * @returns {Promise<object|null>} كائن JSON أو null عند التعذّر
  */
 export async function askJSON({ system, user, maxTokens = 2000 }) {
-  const client = await getClient();
-  if (!client) return null;
-
+  const provider = activeProvider();
+  if (!provider) return null;
   try {
-    const res = await client.messages.create({
-      model: MODEL(),
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: user }],
-    });
-    const text = res.content
-      ?.filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n") || "";
+    const text = provider === "anthropic"
+      ? await askAnthropic({ system, user, maxTokens })
+      : await askGemini({ system, user, maxTokens });
     return parseJSON(text);
   } catch (err) {
-    console.warn("[llm] فشل نداء النموذج، سيُستخدم المحرّك الاحتياطي:", err.message);
+    console.warn(`[llm:${provider}] فشل نداء النموذج، سيُستخدم المحرّك الاحتياطي:`, err.message);
     return null;
   }
 }
@@ -68,7 +100,6 @@ export function parseJSON(text) {
   try {
     return JSON.parse(slice);
   } catch {
-    // محاولة قصّ إلى آخر قوس مغلق
     const lastObj = slice.lastIndexOf("}");
     const lastArr = slice.lastIndexOf("]");
     const to = Math.max(lastObj, lastArr);

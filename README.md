@@ -87,7 +87,7 @@ ANTHROPIC_API_KEY=مفتاحك npm start   # الموقع + الوكلاء عل�
 
 1. ادخل [render.com](https://render.com) وسجّل بحساب GitHub.
 2. **New + → Blueprint**، واختر مستودع `Mijhar`.
-3. Render يقرأ `render.yaml` تلقائياً. أضف متغيّر البيئة **`ANTHROPIC_API_KEY`** بقيمة مفتاحك (سرّي — لا يوضع في الكود).
+3. Render يقرأ `render.yaml` تلقائياً. أضف متغيّر البيئة **`GEMINI_API_KEY`** (مجاني) أو **`ANTHROPIC_API_KEY`** بقيمة مفتاحك (سرّي — لا يوضع في الكود).
 4. **Apply / Deploy** — بعد دقائق يصير للموقع رابط عام تشاركه مع المحكّمين.
 
 ### نقاط النهاية (API)
@@ -98,10 +98,17 @@ ANTHROPIC_API_KEY=مفتاحك npm start   # الموقع + الوكلاء عل�
 | `GET`  | `/api/meta`    | الوكلاء + أنواع العقود + نصوص تجريبية |
 | `POST` | `/api/analyze` | تحليل عقد: `{ contractType, text, financial? }` |
 
-### الذكاء الاصطناعي (اختياري)
+### الذكاء الاصطناعي
 
-المشروع يعمل **بدون أي إعداد**: إن لم يوجد مفتاح API، يشتغل بـ**محرّك احتياطي** يعطي نتائج تحليل واقعية كاملة (مهم للعرض والتجربة).
-لتفعيل التحليل الحقيقي بالذكاء الاصطناعي، انسخ `backend/.env.example` إلى `backend/.env` وضع مفتاح `ANTHROPIC_API_KEY`.
+المشروع يعمل **بدون أي إعداد**: إن لم يوجد مفتاح، يشتغل بـ**محرّك احتياطي** يعطي نتائج تحليل واقعية كاملة.
+لتفعيل التحليل الحقيقي بالذكاء الاصطناعي، ضع **أحد** المفتاحين في `backend/.env`:
+
+| المزوّد | المتغيّر | ملاحظة |
+|---------|---------|--------|
+| **Google Gemini** | `GEMINI_API_KEY` | مجاني بدون بطاقة — [aistudio.google.com](https://aistudio.google.com) |
+| **Anthropic Claude** | `ANTHROPIC_API_KEY` | يحتاج رصيد مدفوع — [console.anthropic.com](https://console.anthropic.com) |
+
+عند وجود مفتاح Claude فله الأولوية؛ وإلا يُستخدم Gemini.
 
 ---
 
