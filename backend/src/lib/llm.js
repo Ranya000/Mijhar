@@ -1,7 +1,8 @@
 // ============================================================
-// طبقة الذكاء الاصطناعي — تدعم مزوّدَين:
-//   • Anthropic Claude  (عند وجود ANTHROPIC_API_KEY)
-//   • Google Gemini     (عند وجود GEMINI_API_KEY — مجاني بدون بطاقة)
+// طبقة الذكاء الاصطناعي — تدعم ثلاثة مزوّدات (الأولوية بهذا الترتيب):
+//   • Anthropic Claude  (ANTHROPIC_API_KEY — رصيد مدفوع)
+//   • Google Gemini     (GEMINI_API_KEY — مجاني)
+//   • Groq              (GROQ_API_KEY — مجاني بدون بطاقة)
 // إن لم يوجد أي مفتاح، تعمل الوكلاء بالمحرّك الاحتياطي دون أعطال.
 // ============================================================
 
@@ -62,7 +63,7 @@ async function askGemini({ system, user, maxTokens }) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts: [{ text: user }] }],
-        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.4, responseMimeType: "application/json" },
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2, responseMimeType: "application/json" },
       }),
     });
     if (res.ok) {
@@ -91,7 +92,7 @@ async function askGroq({ system, user, maxTokens }) {
         { role: "user", content: user },
       ],
       max_tokens: maxTokens,
-      temperature: 0.4,
+      temperature: 0.2,
       response_format: { type: "json_object" },
     }),
   });

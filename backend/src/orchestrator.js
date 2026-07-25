@@ -18,6 +18,7 @@ import * as marketAgent from "./agents/marketAgent.js";
 import * as futureAgent from "./agents/futureAgent.js";
 import * as financialAgent from "./agents/financialAgent.js";
 import * as objectionAgent from "./agents/objectionAgent.js";
+import * as extractAgent from "./agents/extractAgent.js";
 
 /**
  * يشغّل التحليل الكامل لعقد.
@@ -41,23 +42,31 @@ export async function analyzeContract({ contractType, text, financial }) {
   const sources = {};
 
   // ----- تشغيل الوكلاء (بالتوازي) -----
-  const [risksOut, hiddenOut, marketOut, futureOut] = await Promise.all([
+  const [risksOut, hiddenOut, marketOut, futureOut, extractOut] = await Promise.all([
     risksAgent.run({ contractKey, text, sample }),
     hiddenAgent.run({ contractKey, text, sample }),
     marketAgent.run({ contractKey, text, sample }),
     futureAgent.run({ contractKey, text, sample }),
+    extractAgent.run({ text, sample }),
   ]);
   sources.risks = risksOut.source;
   sources.hidden = hiddenOut.source;
   sources.market = marketOut.source;
   sources.future = futureOut.source;
+  sources.extract = extractOut.source;
 
   const hiddenItems = hiddenOut.hiddenItems;
   const marketComparison = marketOut.marketComparison;
   const futureTimeline = futureOut.futureTimeline;
 
-  // ----- وكيل الأثر المالي (حسابي دائماً) -----
-  const finOut = financialAgent.run({ contractKey, sample, financial });
+  // ----- الأرقام المستخلصة من العقد الفعلي (ملخّص/مالية/مخططات) -----
+  const summary = extractOut.summary;
+  const money = extractOut.money;
+  const costProjection = extractOut.costProjection;
+  const exposure = extractOut.exposure;
+
+  // ----- وكيل الأثر المالي (حسابي دائماً، على الأرقام المستخلصة) -----
+  const finOut = financialAgent.run({ contractKey, sample: { ...sample, money }, financial });
   const fin = finOut.financial;
   sources.financial = finOut.source;
 
@@ -81,14 +90,14 @@ export async function analyzeContract({ contractType, text, financial }) {
     contractKey,
     safetyScore,
     safetyLevel,
-    summary: sample.summary,
-    money: sample.money,
+    summary,
+    money,
     risks: risksOut.risks,
     hiddenItems,
     marketComparison,
     futureTimeline,
-    costProjection: sample.costProjection,
-    exposure: sample.exposure,
+    costProjection,
+    exposure,
     objectionLetters,
     financial: fin,
     meta: { sources, generatedAt: new Date().toISOString() },
