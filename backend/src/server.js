@@ -15,7 +15,7 @@ import { analyzeContract } from "./orchestrator.js";
 import { AGENTS, CONTRACT_TYPES } from "./data/agents.js";
 import { SAMPLE_ANALYSES, SAMPLE_CONTRACT_TEXTS, resolveContractKey } from "./data/index.js";
 import * as financialAgent from "./agents/financialAgent.js";
-import { isLLMEnabled, activeProvider, askJSON } from "./lib/llm.js";
+import { isLLMEnabled, activeProvider, probe } from "./lib/llm.js";
 
 export function createApp() {
   const app = express();
@@ -28,22 +28,14 @@ export function createApp() {
 
   // فحص ذاتي: يجري نداءً حقيقياً للنموذج ويخبر إن كان الذكاء الاصطناعي يعمل فعلاً
   app.get("/api/selftest", async (_req, res) => {
-    const provider = activeProvider();
-    if (!provider) {
-      return res.json({ provider: null, aiWorking: false, message: "لا يوجد مفتاح — الموقع يعمل بالبيانات الجاهزة." });
-    }
-    const out = await askJSON({
-      system: "أنت تُجيب بصيغة JSON فقط.",
-      user: 'أعِد هذا الكائن كما هو: {"ok": true}',
-      maxTokens: 50,
-    });
-    const aiWorking = out !== null;
+    const r = await probe();
     res.json({
-      provider,
-      aiWorking,
-      message: aiWorking
-        ? `✅ الذكاء الاصطناعي يعمل عبر ${provider} — الوكلاء يحللون العقود الجديدة بذكاء حقيقي.`
-        : `⚠️ المفتاح موجود لكن النداء فشل (رصيد/صلاحية المفتاح). الموقع يعمل بالبيانات الجاهزة مؤقتاً.`,
+      provider: r.provider,
+      aiWorking: r.ok,
+      error: r.error,
+      message: r.ok
+        ? `✅ الذكاء الاصطناعي يعمل عبر ${r.provider} — الوكلاء يحللون العقود الجديدة بذكاء حقيقي.`
+        : `⚠️ النداء فشل. سبب الخطأ: ${r.error}`,
     });
   });
 

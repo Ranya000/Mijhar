@@ -87,6 +87,22 @@ export async function askJSON({ system, user, maxTokens = 2000 }) {
   }
 }
 
+/**
+ * فحص تشخيصي: يجري نداءً حقيقياً ويعيد الخطأ الفعلي إن فشل.
+ * @returns {Promise<{provider:string|null, ok:boolean, error:string|null, sample?:string}>}
+ */
+export async function probe() {
+  const provider = activeProvider();
+  if (!provider) return { provider: null, ok: false, error: "لا يوجد مفتاح" };
+  const args = { system: "أجب بصيغة JSON فقط.", user: 'أعِد: {"ok":true}', maxTokens: 50 };
+  try {
+    const text = provider === "anthropic" ? await askAnthropic(args) : await askGemini(args);
+    return { provider, ok: true, error: null, sample: String(text || "").slice(0, 120) };
+  } catch (err) {
+    return { provider, ok: false, error: String(err.message || err).slice(0, 300) };
+  }
+}
+
 // يستخرج أول كتلة JSON صالحة من نص النموذج
 export function parseJSON(text) {
   if (!text) return null;
