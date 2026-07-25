@@ -8,10 +8,13 @@ services:
     buildCommand: npm run build
     startCommand: npm start
     envVars:
-      # مفتاح Google Gemini — مجاني بدون بطاقة (aistudio.google.com)
-      # يُضاف يدوياً من لوحة تحكم Render (سرّي، لا يوضع في الكود)
+      # مفاتيح الذكاء الاصطناعي المجانية — يُضاف واحد منها من لوحة Render (سرّي)
+      # Google Gemini — مجاني (aistudio.google.com)
       - key: GEMINI_API_KEY
         sync: false
-      # (اختياري) مفتاح Claude — إن وُجد فله الأولوية على Gemini
+      # Groq — مجاني بدون بطاقة وحصته أكرم (console.groq.com)
+      - key: GROQ_API_KEY
+        sync: false
+      # (اختياري) Claude — إن وُجد فله الأولوية (يحتاج رصيد مدفوع)
       - key: ANTHROPIC_API_KEY
         sync: false
