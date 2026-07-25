@@ -1,0 +1,412 @@
+<title>مِجهر — شرح المشروع والمميزات</title>
+<style>
+  :root {
+    --ground: #08080C;
+    --ground-2: #0D0C14;
+    --panel: rgba(255,255,255,0.035);
+    --panel-2: rgba(255,255,255,0.055);
+    --line: rgba(255,255,255,0.09);
+    --p1: #6B3CFF; --p2: #B03CFF; --plite: #C4B0FF;
+    --ink: #FFFFFF;
+    --muted: rgba(255,255,255,0.56);
+    --faint: rgba(255,255,255,0.34);
+    --red: #FF5C5C; --yellow: #FFC847; --green: #1FD89E;
+    --a-risk:#FF3B3B; --a-hidden:#B03CFF; --a-market:#FFB800;
+    --a-future:#00C48C; --a-fin:#0EC9E0; --a-obj:#3C8FFF;
+    --maxw: 1080px;
+    --font: "Tajawal", "SF Arabic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; direction: rtl; background: var(--ground); color: var(--ink);
+    font-family: var(--font); line-height: 1.75; -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(ellipse 90% 55% at 50% -10%, rgba(107,60,255,0.20), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 5%, rgba(176,60,255,0.10), transparent 55%);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: var(--maxw); margin-inline: auto; padding-inline: 22px; }
+  section { padding: 40px 0; }
+  h1,h2,h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+  p { margin: 0; }
+  a { color: inherit; }
+
+  .eyebrow {
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700;
+    color: var(--plite); background: rgba(107,60,255,0.12); border:1px solid rgba(107,60,255,0.30);
+    border-radius: 100px; padding: 6px 15px; letter-spacing:.2px;
+  }
+  .sec-head { display:flex; flex-direction:column; gap:10px; margin-bottom: 26px; }
+  .sec-head h2 { font-size: clamp(24px, 4.5vw, 34px); font-weight: 900; }
+  .sec-head p { color: var(--muted); font-size: 15.5px; max-width: 62ch; }
+
+  /* HERO */
+  .hero { text-align:center; padding: 64px 0 30px; }
+  .brand { display:inline-flex; align-items:center; gap:14px; margin-bottom: 26px; }
+  .logo-sq {
+    width: 62px; height: 62px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--p1), var(--p2));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 10px 34px rgba(107,60,255,0.45);
+  }
+  .brand-name { font-size: 40px; font-weight: 900; line-height: 1; }
+  .brand-sub { font-size: 15px; color: var(--plite); font-weight: 600; margin-top: 3px; }
+  .hero h1 { font-size: clamp(30px, 6.5vw, 54px); font-weight: 900; margin: 8px 0 16px; }
+  .hero h1 .grad { background: linear-gradient(90deg, var(--plite), var(--p2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero .lead { color: var(--muted); font-size: clamp(16px, 2.3vw, 19px); max-width: 60ch; margin-inline:auto; }
+  .cta-row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top: 30px; }
+  .btn {
+    display:inline-flex; align-items:center; gap:10px; padding: 13px 26px; border-radius: 13px;
+    font-weight: 800; font-size: 15.5px; text-decoration:none; border:1px solid transparent; transition: transform .18s, box-shadow .18s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--p1), var(--p2)); color:#fff; box-shadow: 0 8px 28px rgba(107,60,255,0.42); }
+  .btn-ghost { background: var(--panel-2); border-color: var(--line); color: var(--ink); }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:focus-visible { outline: 2px solid var(--plite); outline-offset: 3px; }
+
+  /* stat strip */
+  .stats { display:grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 40px; }
+  .stat { background: var(--panel); border:1px solid var(--line); border-radius:16px; padding: 18px 16px; text-align:center; }
+  .stat .n { font-size: 30px; font-weight: 900; background: linear-gradient(90deg, var(--plite), var(--p2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .stat .l { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  /* problem */
+  .split { display:grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items:stretch; }
+  .card { background: var(--panel); border:1px solid var(--line); border-radius: 18px; padding: 22px 24px; }
+  .card.problem { border-color: rgba(255,92,92,0.22); background: linear-gradient(135deg, rgba(255,59,59,0.06), var(--panel)); }
+  .card.solution { border-color: rgba(31,216,158,0.22); background: linear-gradient(135deg, rgba(0,196,140,0.06), var(--panel)); }
+  .card h3 { font-size: 19px; font-weight: 800; margin-bottom: 10px; display:flex; align-items:center; gap:9px; }
+  .card p { color: var(--muted); font-size: 15px; }
+  .card .dot { width:9px; height:9px; border-radius:50%; flex:none; }
+
+  /* agents */
+  .agents { display:grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .agent { background: var(--panel); border:1px solid var(--line); border-radius: 16px; padding: 20px; transition: transform .18s, border-color .18s, background .18s; }
+  .agent:hover { transform: translateY(-3px); }
+  .agent .top { display:flex; align-items:center; gap:12px; margin-bottom: 11px; }
+  .agent .ic { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .agent .nm { font-weight: 800; font-size: 16.5px; }
+  .agent .ds { color: var(--muted); font-size: 14px; }
+  .agent .num { margin-inline-start:auto; font-size: 13px; font-weight:800; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* flow */
+  .flow { display:grid; grid-template-columns: repeat(4,1fr); gap: 12px; counter-reset: step; }
+  .step { background: var(--panel); border:1px solid var(--line); border-radius: 16px; padding: 20px 18px; position:relative; }
+  .step .k { font-size: 12px; font-weight:800; color: var(--plite); letter-spacing:.3px; }
+  .step h4 { font-size: 16px; font-weight: 800; margin: 8px 0 6px; }
+  .step p { color: var(--muted); font-size: 13.5px; }
+
+  /* types */
+  .types { display:grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .type { border:1px solid var(--line); border-radius: 16px; padding: 20px; background: var(--panel); }
+  .type .badge { font-size:12px; font-weight:800; border-radius:100px; padding:3px 11px; display:inline-block; }
+  .type h4 { font-size: 17px; font-weight: 800; margin: 12px 0 6px; }
+  .type p { color: var(--muted); font-size: 13.5px; }
+
+  /* features */
+  .feats { display:grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+  .feat { display:flex; gap:13px; background: var(--panel); border:1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .feat .fic { width: 38px; height:38px; border-radius: 11px; background: rgba(107,60,255,0.14); border:1px solid rgba(107,60,255,0.28); display:flex; align-items:center; justify-content:center; flex:none; }
+  .feat h4 { font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+  .feat p { color: var(--muted); font-size: 13.5px; }
+
+  /* tech */
+  .tech { display:flex; flex-wrap:wrap; gap: 10px; }
+  .chip { background: var(--panel-2); border:1px solid var(--line); border-radius: 100px; padding: 9px 16px; font-size: 13.5px; font-weight:700; color: rgba(255,255,255,0.82); display:inline-flex; gap:8px; align-items:center; }
+  .chip .cd { width:8px; height:8px; border-radius:50%; }
+
+  /* honesty */
+  .honest { border:1px solid rgba(255,200,71,0.28); border-radius: 20px; padding: 6px 4px; background: linear-gradient(135deg, rgba(255,184,0,0.05), var(--panel)); }
+  .honest .hh { display:flex; align-items:center; gap:10px; padding: 20px 24px 4px; }
+  .honest .hh h2 { font-size: 24px; font-weight: 900; }
+  .honest .hh .tag { font-size: 12px; font-weight:800; color: var(--yellow); background: rgba(255,184,0,0.14); border:1px solid rgba(255,184,0,0.3); border-radius:100px; padding: 3px 11px; }
+  .honest .grid3 { display:grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding: 16px 20px 22px; }
+  .hcol { background: rgba(0,0,0,0.22); border:1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .hcol .ct { font-weight: 800; font-size: 15px; margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+  .hcol ul { margin:0; padding: 0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+  .hcol li { color: var(--muted); font-size: 13.5px; padding-inline-start: 20px; position:relative; line-height:1.65; }
+  .hcol li::before { content:""; position:absolute; inset-inline-start:0; top:9px; width:8px; height:8px; border-radius:50%; }
+  .hcol.now li::before { background: var(--green); }
+  .hcol.proto li::before { background: var(--yellow); }
+  .hcol.next li::before { background: var(--a-fin); }
+  .hcol .ct.now { color: var(--green); }
+  .hcol .ct.proto { color: var(--yellow); }
+  .hcol .ct.next { color: var(--a-fin); }
+
+  /* team */
+  .team { display:flex; flex-wrap:wrap; gap: 10px; }
+  .member { background: var(--panel); border:1px solid var(--line); border-radius: 14px; padding: 12px 18px; display:flex; align-items:center; gap:11px; }
+  .member .av { width: 36px; height:36px; border-radius:50%; background: linear-gradient(135deg, var(--p1), var(--p2)); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:15px; flex:none; }
+  .member .mn { font-weight: 700; font-size: 14.5px; }
+  .member .mr { font-size: 12px; color: var(--plite); }
+
+  footer { border-top: 1px solid var(--line); margin-top: 20px; padding: 34px 0 50px; text-align:center; }
+  footer .fnote { color: var(--faint); font-size: 12.5px; margin-top: 16px; max-width: 58ch; margin-inline:auto; }
+
+  .reveal { opacity: 0; transform: translateY(14px); animation: rise .6s cubic-bezier(.2,.7,.3,1) forwards; }
+  @keyframes rise { to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { .reveal { animation:none; opacity:1; transform:none; } html{scroll-behavior:auto;} }
+
+  @media (max-width: 860px) {
+    .split, .agents, .flow, .types, .feats, .honest .grid3 { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero reveal">
+    <div class="brand">
+      <div class="logo-sq">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+          <circle cx="10" cy="10" r="6" stroke="white" stroke-width="2.2"/>
+          <path d="M14.5 14.5L20 20" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
+          <circle cx="10" cy="10" r="2.4" fill="white" fill-opacity="0.55"/>
+        </svg>
+      </div>
+      <div style="text-align:right">
+        <div class="brand-name">مِجهر</div>
+        <div class="brand-sub">كاشف المخاطر للأفراد</div>
+      </div>
+    </div>
+    <div class="eyebrow">٦ وكلاء ذكاء اصطناعي يعملون معاً</div>
+    <h1>افهم عقدك <span class="grad">قبل ما توقّع</span></h1>
+    <p class="lead">منصّة تحلّل عقودك (إيجار، تمويل، استثمار) بالذكاء الاصطناعي، وتكشف لك البنود الخطيرة والمخفية، تقارنها بالسوق، تحسب أثرها المالي، وتكتب لك رسالة اعتراض جاهزة — كل ذلك في ثوانٍ.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://mijhar-d2on.onrender.com" target="_blank" rel="noopener">تجربة الموقع المباشر ←</a>
+      <a class="btn btn-ghost" href="https://github.com/Ranya000/Mijhar" target="_blank" rel="noopener">الكود على GitHub</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="n">٦</div><div class="l">وكلاء ذكاء اصطناعي</div></div>
+      <div class="stat"><div class="n">٣</div><div class="l">أنواع عقود مدعومة</div></div>
+      <div class="stat"><div class="n">٧</div><div class="l">شاشات تحليل تفاعلية</div></div>
+      <div class="stat"><div class="n">ثوانٍ</div><div class="l">لتحليل العقد كاملاً</div></div>
+    </div>
+  </header>
+
+  <!-- PROBLEM / SOLUTION -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">المشكلة والحل</div>
+      <h2>كثير يوقّعون عقوداً لا يفهمونها</h2>
+    </div>
+    <div class="split">
+      <div class="card problem">
+        <h3><span class="dot" style="background:var(--red)"></span> المشكلة</h3>
+        <p>كثير من الأفراد يوقّعون عقود إيجار وتمويل واستثمار دون فهم كامل لبنودها الخطيرة أو المخفية، فيقعون في التزامات مالية مجحفة. النصوص القانونية طويلة ومعقّدة، والبنود المهمة غالباً «مدفونة» في الصياغة.</p>
+      </div>
+      <div class="card solution">
+        <h3><span class="dot" style="background:var(--green)"></span> الحل: «مجهر»</h3>
+        <p>يحلّل العقد بالذكاء الاصطناعي عبر ٦ وكلاء متخصصين، يبسّط النصوص القانونية، يكشف ما لا تراه، يقارنه بالسوق السعودي، ويعطيك قراراً واضحاً بلغة بسيطة — قبل أن توقّع.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENTS -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">جوهر المشروع</div>
+      <h2>الوكلاء الستة</h2>
+      <p>كل وكيل متخصص في زاوية مختلفة من عقدك، ويعملون معاً على نص العقد الذي ترفعه.</p>
+    </div>
+    <div class="agents">
+      <div class="agent" style="--c:var(--a-risk)">
+        <div class="top">
+          <div class="ic" style="background:rgba(255,59,59,.14);border:1px solid rgba(255,59,59,.32)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a-risk)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <span class="nm">كاشف المخاطر</span><span class="num">٠١</span>
+        </div>
+        <div class="ds">يحدد كل بند خطير ويصنّفه (خطر / تنبيه / آمن) مع ترجمة تبسيطية بالعامية.</div>
+      </div>
+      <div class="agent">
+        <div class="top">
+          <div class="ic" style="background:rgba(176,60,255,.14);border:1px solid rgba(176,60,255,.32)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a-hidden)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <span class="nm">كاشف المخفي</span><span class="num">٠٢</span>
+        </div>
+        <div class="ds">يكشف الثغرات والبنود الغامضة المصاغة بطريقة تُخفي أثرها الحقيقي.</div>
+      </div>
+      <div class="agent">
+        <div class="top">
+          <div class="ic" style="background:rgba(255,184,0,.14);border:1px solid rgba(255,184,0,.32)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a-market)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <span class="nm">مقارنة السوق</span><span class="num">٠٣</span>
+        </div>
+        <div class="ds">يقارن بنودك بالمعتاد والمنظّم في السوق السعودي، ويحسب الفرق بالريال.</div>
+      </div>
+      <div class="agent">
+        <div class="top">
+          <div class="ic" style="background:rgba(0,196,140,.14);border:1px solid rgba(0,196,140,.32)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a-future)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 21l1-11h3l1 11"/><rect x="9.5" y="5.5" width="5" height="4.5" rx="0.5"/><path d="M12 3v2.5M7 21h10"/></svg>
+          </div>
+          <span class="nm">النظرة المستقبلية</span><span class="num">٠٤</span>
+        </div>
+        <div class="ds">يبني خطاً زمنياً يوضّح ما سيحدث لك بعد التوقيع، مرحلة بمرحلة.</div>
+      </div>
+      <div class="agent">
+        <div class="top">
+          <div class="ic" style="background:rgba(14,201,224,.14);border:1px solid rgba(14,201,224,.32)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a-fin)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>
+          </div>
+          <span class="nm">الأثر المالي</span><span class="num">٠٥</span>
+        </div>
+        <div class="ds">حاسبة تفاعلية تحلل دخلك/ثروتك وتقرر إن كان العقد يناسبك، مع الأسباب بالأرقام.</div>
+      </div>
+      <div class="agent">
+        <div class="top">
+          <div class="ic" style="background:rgba(60,143,255,.14);border:1px solid rgba(60,143,255,.32)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a-obj)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <span class="nm">وكيل الاعتراض</span><span class="num">٠٦</span>
+        </div>
+        <div class="ds">يكتب رسائل اعتراض قانونية جاهزة بناءً على ما كشفه بقية الوكلاء.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">رحلة المستخدم</div>
+      <h2>كيف يعمل؟</h2>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="k">الخطوة ٠١</div><h4>ارفع عقدك</h4><p>الصق نص العقد أو ارفع ملفاً، واختر نوعه (إيجار / تمويل / استثمار).</p></div>
+      <div class="step"><div class="k">الخطوة ٠٢</div><h4>الوكلاء يحلّلون</h4><p>الوكلاء الستة يفحصون العقد من كل زاوية بالتوازي، مباشرةً على نصّك.</p></div>
+      <div class="step"><div class="k">الخطوة ٠٣</div><h4>لوحة نتائج</h4><p>درجة أمان، مخاطر مصنّفة، بنود مخفية، مقارنة سوق، خط زمني، وحاسبة مالية.</p></div>
+      <div class="step"><div class="k">الخطوة ٠٤</div><h4>رسالة اعتراض</h4><p>انسخ رسالة اعتراض قانونية جاهزة وأرسلها للطرف الآخر كما هي.</p></div>
+    </div>
+  </section>
+
+  <!-- CONTRACT TYPES -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">النطاق</div>
+      <h2>ثلاثة أنواع عقود — الأكثر استخداماً للأفراد</h2>
+    </div>
+    <div class="types">
+      <div class="type" style="border-color:rgba(0,196,140,.25)">
+        <span class="badge" style="background:rgba(0,196,140,.14);color:var(--green)">إيجار</span>
+        <h4>عقد إيجار سكني</h4>
+        <p>التجديد التلقائي، غرامات الإنهاء، الزيادة السنوية، مسؤولية الصيانة، ووديعة الضمان.</p>
+      </div>
+      <div class="type" style="border-color:rgba(255,184,0,.25)">
+        <span class="badge" style="background:rgba(255,184,0,.14);color:var(--yellow)">تمويل</span>
+        <h4>عقد تمويل شخصي</h4>
+        <p>النسبة الفعلية (APR) مقابل المعلنة، تحويل الراتب، السداد المبكر، والتأمين الإجباري.</p>
+      </div>
+      <div class="type" style="border-color:rgba(255,92,92,.25)">
+        <span class="badge" style="background:rgba(255,59,59,.14);color:var(--red)">استثمار</span>
+        <h4>عقد فرصة استثمارية</h4>
+        <p>العوائد «المضمونة»، الترخيص الرقابي، فترة الحظر، رسوم الأداء، وضمان رأس المال.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">المميزات</div>
+      <h2>ما الذي يميّز مجهر؟</h2>
+    </div>
+    <div class="feats">
+      <div class="feat"><div class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--plite)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div><div><h4>ترجمة تبسيطية بالعامية</h4><p>كل بند قانوني معقّد يُترجم لك بلغة سعودية بسيطة تفهمها فوراً.</p></div></div>
+      <div class="feat"><div class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--plite)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div><h4>مقارنة بالسوق بالريال</h4><p>يخبرك كم تدفع «زيادة» عن السوق العادل، برقم واضح لكل بند.</p></div></div>
+      <div class="feat"><div class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--plite)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/></svg></div><div><h4>حاسبة أثر مالي حيّة</h4><p>أدخل دخلك، وتغيّر التوصية لحظياً — هل هذا العقد يناسب محفظتك؟</p></div></div>
+      <div class="feat"><div class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--plite)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><div><h4>رسائل اعتراض جاهزة</h4><p>خطابات قانونية مصاغة تلقائياً، تنسخها وترسلها مباشرة.</p></div></div>
+      <div class="feat"><div class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--plite)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div><h4>خط زمني لما بعد التوقيع</h4><p>يوضّح ما ينتظرك: عند التوقيع، أول قسط، بعد سنة، وعند الخروج المبكر.</p></div></div>
+      <div class="feat"><div class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--plite)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><div><h4>واجهة عربية بالكامل (RTL)</h4><p>مصمّمة خصيصاً لعرض وتفكيك النصوص القانونية العربية بسلاسة.</p></div></div>
+    </div>
+  </section>
+
+  <!-- TECH -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">التقنيات</div>
+      <h2>كيف بُني المشروع؟</h2>
+      <p>موقع كامل: واجهة تفاعلية + خادم خلفي + منظومة وكلاء متعددين، منشور أونلاين ويعمل بذكاء اصطناعي حقيقي.</p>
+    </div>
+    <div class="tech">
+      <span class="chip"><span class="cd" style="background:var(--a-fin)"></span> واجهة React (RTL)</span>
+      <span class="chip"><span class="cd" style="background:var(--a-future)"></span> خادم Node.js + Express</span>
+      <span class="chip"><span class="cd" style="background:var(--a-hidden)"></span> بنية وكلاء متعددين (Multi-Agent)</span>
+      <span class="chip"><span class="cd" style="background:var(--p2)"></span> نماذج لغوية ضخمة (LLM)</span>
+      <span class="chip"><span class="cd" style="background:var(--a-market)"></span> مخططات SVG تفاعلية</span>
+      <span class="chip"><span class="cd" style="background:var(--a-obj)"></span> هيكلة بيانات JSON</span>
+      <span class="chip"><span class="cd" style="background:var(--green)"></span> ٣٥ اختبار آلي</span>
+      <span class="chip"><span class="cd" style="background:var(--a-risk)"></span> منشور أونلاين (Render)</span>
+    </div>
+  </section>
+
+  <!-- HONEST STATUS -->
+  <section class="reveal">
+    <div class="honest">
+      <div class="hh">
+        <h2>أين نحن الآن؟</h2>
+        <span class="tag">بصدق وشفافية</span>
+      </div>
+      <div class="grid3">
+        <div class="hcol now">
+          <div class="ct now"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> يعمل فعلاً الآن</div>
+          <ul>
+            <li>تحليل حقيقي بالذكاء الاصطناعي لأي عقد يرفعه المستخدم.</li>
+            <li>الوكلاء الستة يعملون على النص الفعلي، لا على بيانات ثابتة.</li>
+            <li>دعم ٣ أنواع عقود، وتدفّق كامل حتى رسالة الاعتراض.</li>
+            <li>موقع منشور أونلاين برابط، يعمل من أي جهاز.</li>
+          </ul>
+        </div>
+        <div class="hcol proto">
+          <div class="ct proto"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> مرحلة النموذج الأولي</div>
+          <ul>
+            <li>مرجعيات السوق حالياً قيم واقعية مُحاكاة، وليست ربطاً مباشراً بالجهات الرسمية بعد.</li>
+            <li>مخرجات الذكاء الاصطناعي إرشادية، وقد تحتاج مراجعة — ليست استشارة قانونية أو مالية رسمية.</li>
+            <li>قد تختلف بعض الأرقام قليلاً بين تحليل وآخر، بحكم طبيعة النماذج اللغوية.</li>
+          </ul>
+        </div>
+        <div class="hcol next">
+          <div class="ct next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--a-fin)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> الخطط القادمة</div>
+          <ul>
+            <li>ربط مباشر (API) مع الجهات الرسمية: منصّة إيجار، البنك المركزي، هيئة السوق المالية، وناجز.</li>
+            <li>تدريب على بيانات عقود حقيقية مجهّلة لرفع الدقّة.</li>
+            <li>لوحة تحكم ذكية لإدارة العقود، وتوصيات قانونية لحظية.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="reveal">
+    <div class="sec-head">
+      <div class="eyebrow" style="align-self:flex-start">الفريق</div>
+      <h2>من نحن</h2>
+    </div>
+    <div class="team">
+      <div class="member"><div class="av">ر</div><div><div class="mn">رانيا العتيبي</div><div class="mr">قائدة الفريق</div></div></div>
+      <div class="member"><div class="av">ن</div><div><div class="mn">نورة العتيبي</div><div class="mr">عضو الفريق</div></div></div>
+    </div>
+  </section>
+
+  <footer class="reveal">
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://mijhar-d2on.onrender.com" target="_blank" rel="noopener">جرّب مجهر الآن ←</a>
+      <a class="btn btn-ghost" href="https://github.com/Ranya000/Mijhar" target="_blank" rel="noopener">الكود الكامل</a>
+    </div>
+    <p class="fnote">مجهر أداة إرشادية تساعد الأفراد على فهم عقودهم، ولا تُعدّ استشارة قانونية أو مالية رسمية. المشروع في مرحلة النموذج الأولي.</p>
+  </footer>
+
+</div>
+
+<script>
+  // كشف تدريجي عند التمرير
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => { if (e.isIntersecting) { e.target.style.animationDelay = (i*40)+"ms"; e.target.classList.add("reveal"); io.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll("section").forEach((s) => io.observe(s));
+</script>
