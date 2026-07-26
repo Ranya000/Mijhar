@@ -1,68 +1,69 @@
 <div align="center">
 
-# 🔍 مِجهر — كاشف المخاطر للأفراد
+# 🔍 Mijhar — Personal Risk Detector
 
-**افهم عقدك قبل ما توقّع.**
+**Understand your contract before you sign.**
 
-منصّة تحلّل عقودك (**إيجار · تمويل · استثمار**) عبر **٦ وكلاء ذكاء اصطناعي**،
-وتكشف البنود الخطيرة والمخفية، تقارنها بالسوق، تحسب أثرها المالي،
-وتكتب لك رسالة اعتراض جاهزة — كل ذلك في ثوانٍ.
+A platform that analyzes your contracts (**Rental · Financing · Investment**)
+through **6 AI agents** — uncovering dangerous and hidden clauses, comparing them
+to the market, calculating their financial impact, and drafting a ready-to-send
+objection letter, all in seconds.
 
-### 🌐 [جرّب الموقع المباشر](https://mijhar-d2on.onrender.com)
+### 🌐 [Try the Live Site](https://mijhar-d2on.onrender.com)
 
 </div>
 
 ---
 
-## 🤖 الوكلاء الستة
+## 🤖 The Six Agents
 
-| # | الوكيل | المهمة |
+| # | Agent | Role |
 |:---:|---|---|
-| ١ | **كاشف المخاطر** | يحدد كل بند خطير ويصنّفه (خطر / تنبيه / آمن) مع ترجمة تبسيطية |
-| ٢ | **كاشف المخفي** | يكشف الثغرات والبنود الغامضة المصاغة لتُخفي أثرها |
-| ٣ | **مقارنة السوق** | يقارن بنودك بالمعتاد في السوق السعودي بالريال |
-| ٤ | **النظرة المستقبلية** | يبني خطاً زمنياً لما سيحدث بعد التوقيع |
-| ٥ | **الأثر المالي** | حاسبة تفاعلية تقرّر إن كان العقد يناسب وضعك المالي |
-| ٦ | **وكيل الاعتراض** | يكتب رسائل اعتراض قانونية جاهزة بناءً على بقية الوكلاء |
+| 1 | **Risk Detector** | Identifies every risky clause and classifies it (danger / warning / safe) with a simplified translation |
+| 2 | **Hidden Clause Detector** | Reveals loopholes and vague clauses written to hide their impact |
+| 3 | **Market Comparison** | Compares your clauses to what's standard in the Saudi market, in riyals |
+| 4 | **Future Outlook** | Builds a timeline of what happens to you after signing |
+| 5 | **Financial Impact** | An interactive calculator that decides whether the contract fits your finances |
+| 6 | **Objection Agent** | Writes ready legal objection letters based on the other agents |
 
-> 📄 **صفحة شرح كاملة للمشروع:** افتح [`docs/about.html`](docs/about.html) في المتصفح.
+> 📄 **Full project overview:** open [`docs/about.html`](docs/about.html) in a browser.
 
 ---
 
-## 📁 هيكل المشروع
+## 📁 Project Structure
 
 ```
 Mijhar/
 │
-├── 📂 backend/              الخادم + الوكلاء الستة (Node.js + Express)
+├── 📂 backend/              Server + the six agents (Node.js + Express)
 │   └── src/
-│       ├── agents/            وكيل لكل ملف (risks, hidden, market, future, financial, object, extract)
-│       ├── data/              بيانات العقود الثلاثة + تعريف الوكلاء
-│       ├── lib/               محرّك الأثر المالي + طبقة الذكاء الاصطناعي + أدوات
-│       ├── orchestrator.js    ينسّق الوكلاء ويجمع النتيجة في تقرير واحد
-│       └── server.js          واجهة API + تقديم الموقع
+│       ├── agents/            One file per agent (risks, hidden, market, future, financial, object, extract)
+│       ├── data/              Data for the three contract types + agent definitions
+│       ├── lib/               Financial-impact engine + AI layer + utilities
+│       ├── orchestrator.js    Coordinates the agents into a single report
+│       └── server.js          API + serves the site
 │
-├── 📂 frontend/             الواجهة (React + Vite، عربية RTL)
+├── 📂 frontend/             Interface (React + Vite, Arabic RTL)
 │   └── src/
-│       ├── App.jsx           التدفّق: الرئيسية ← الرفع ← التحليل ← اللوحة
-│       ├── panels.jsx        لوحات الوكلاء
-│       ├── financial.jsx     لوحة الأثر المالي + الحاسبة
-│       ├── ui.jsx            المكوّنات (أيقونات، بطاقات، مخططات)
-│       └── theme.js / api.js  الألوان والثوابت + الاتصال بالخادم
+│       ├── App.jsx           Flow: home → upload → analyzing → dashboard
+│       ├── panels.jsx        Agent panels
+│       ├── financial.jsx     Financial-impact panel + calculator
+│       ├── ui.jsx            Components (icons, cards, charts)
+│       └── theme.js / api.js  Colors and constants + server connection
 │
-├── 📂 docs/                 صفحة الشرح
-├── render.yaml             إعداد النشر أونلاين
-└── package.json            أوامر البناء والتشغيل الموحّدة
+├── 📂 docs/                 Project overview page
+├── render.yaml             Online deployment config
+└── package.json            Unified build and run scripts
 ```
 
 ---
 
-## 🛠️ التقنيات
+## 🛠️ Tech Stack
 
-`React (RTL)` · `Node.js + Express` · `بنية وكلاء متعددين` · `نماذج لغوية (LLM)` · `مخططات SVG تفاعلية` · `منشور على Render`
+`React (RTL)` · `Node.js + Express` · `Multi-Agent Architecture` · `Large Language Models (LLM)` · `Interactive SVG charts` · `Deployed on Render`
 
 ---
 
 <div align="center">
-<sub>مجهر أداة إرشادية لفهم العقود، ولا تُعدّ استشارة قانونية أو مالية رسمية.</sub>
+<sub>Mijhar is a guidance tool for understanding contracts, not official legal or financial advice.</sub>
 </div>
