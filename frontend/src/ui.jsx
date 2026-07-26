@@ -269,7 +269,7 @@ export function GlobalStyles() {
   return (
     <style>{`
       * { box-sizing: border-box; }
-      button { font-family: Tajawal, sans-serif; }
+      button { font-family: Tajawal, sans-serif; color: inherit; }
       input { font-family: Tajawal, sans-serif; }
       ::selection { background: rgba(107,60,255,0.4); }
       ::-webkit-scrollbar { width: 9px; height: 9px; }
