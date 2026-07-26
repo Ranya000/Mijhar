@@ -57,20 +57,6 @@ Mijhar/
 
 ---
 
-## 🧠 الذكاء الاصطناعي
-
-لتشغيل التحليل بالذكاء الاصطناعي، يوضع **أحد** المفاتيح التالية في متغيّرات البيئة:
-
-| المزوّد | المتغيّر | ملاحظة |
-|---|---|---|
-| **Groq** | `GROQ_API_KEY` | مجاني بدون بطاقة — [console.groq.com](https://console.groq.com/keys) |
-| **Google Gemini** | `GEMINI_API_KEY` | مجاني — [aistudio.google.com](https://aistudio.google.com/apikey) |
-| **Anthropic Claude** | `ANTHROPIC_API_KEY` | يحتاج رصيد — [console.anthropic.com](https://console.anthropic.com) |
-
-عند وجود أكثر من مفتاح، الأولوية: Claude ← Gemini ← Groq.
-
----
-
 ## 🛠️ التقنيات
 
 `React (RTL)` · `Node.js + Express` · `بنية وكلاء متعددين` · `نماذج لغوية (LLM)` · `مخططات SVG تفاعلية` · `منشور على Render`
