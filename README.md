@@ -26,7 +26,7 @@ objection letter, all in seconds.
 | 5 | **Financial Impact** | An interactive calculator that decides whether the contract fits your finances |
 | 6 | **Objection Agent** | Writes ready legal objection letters based on the other agents |
 
-> 📄 **Full project overview:** open [`docs/about.html`](docs/about.html) in a browser.
+> 📄 **Full project overview:** [view the project page](https://mijhar-d2on.onrender.com/about.html)
 
 ---
 
