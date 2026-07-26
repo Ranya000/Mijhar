@@ -10,10 +10,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
     <style>
       html, body, #root { margin: 0; padding: 0; min-height: 100%; background: #0A0A0F; }
+      /* شاشة تحميل تظهر فوراً حتى تجهز الواجهة (تختفي تلقائياً بعد تحميل التطبيق) */
+      #boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+        background: #0A0A0F;
+        background-image: radial-gradient(ellipse 80% 50% at 50% 32%, rgba(107,60,255,0.20), transparent 60%);
+        font-family: Tajawal, system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center;
+      }
+      #boot .logo {
+        width: 74px; height: 74px; border-radius: 20px;
+        background: linear-gradient(135deg, #6B3CFF, #B03CFF);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 12px 40px rgba(107,60,255,0.5); animation: bootPulse 1.6s ease-in-out infinite;
+      }
+      #boot .t { color: #fff; font-weight: 800; font-size: 18px; }
+      #boot .s { color: rgba(255,255,255,0.5); font-size: 13.5px; margin-top: -12px; }
+      #boot .ring {
+        width: 38px; height: 38px; border-radius: 50%;
+        border: 3px solid rgba(255,255,255,0.14); border-top-color: #B08CFF;
+        animation: bootSpin .9s linear infinite;
+      }
+      @keyframes bootSpin { to { transform: rotate(360deg); } }
+      @keyframes bootPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      @media (prefers-reduced-motion: reduce) { #boot .logo, #boot .ring { animation: none; } }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot">
+        <div class="logo">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+            <circle cx="10" cy="10" r="6" stroke="white" stroke-width="2.2" />
+            <path d="M14.5 14.5L20 20" stroke="white" stroke-width="2.6" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="t">جارٍ تجهيز الوكلاء الستة...</div>
+        <div class="s">لحظات ويبدأ التحليل</div>
+        <div class="ring"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
