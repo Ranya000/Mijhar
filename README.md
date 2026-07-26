@@ -9,7 +9,9 @@ through **6 AI agents** — uncovering dangerous and hidden clauses, comparing t
 to the market, calculating their financial impact, and drafting a ready-to-send
 objection letter, all in seconds.
 
-### 🌐 [Try the Live Site](https://mijhar-d2on.onrender.com)
+### 🌐 [Try the Site](https://mijhar-d2on.onrender.com)
+
+### 📄 [Project Overview](https://mijhr-info.netlify.app)
 
 </div>
 
@@ -25,8 +27,6 @@ objection letter, all in seconds.
 | 4 | **Future Outlook** | Builds a timeline of what happens to you after signing |
 | 5 | **Financial Impact** | An interactive calculator that decides whether the contract fits your finances |
 | 6 | **Objection Agent** | Writes ready legal objection letters based on the other agents |
-
-> 📄 **Full project overview:** [view the project page](https://mijhr-info.netlify.app)
 
 ---
 
