@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { EXAMPLES } from "../src/references/examples.js";
 
+// يستخرج كل كائنات JSON المستقلة (كل سطر يبدأ بـ {) من نص المثال
+function extractJSONObjects(text) {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("{") && l.endsWith("}"));
+}
+
 describe("الأمثلة التوجيهية (Few-shot)", () => {
   it("يوجد مثال لكل وكيل نصّي", () => {
     for (const id of ["risks", "hidden", "market", "future", "object"]) {
@@ -9,18 +17,25 @@ describe("الأمثلة التوجيهية (Few-shot)", () => {
     }
   });
 
-  it("كل مثال يحتوي مخرجاً بصيغة JSON صالحة", () => {
+  it("كل كائنات JSON في الأمثلة صالحة", () => {
     for (const [id, ex] of Object.entries(EXAMPLES)) {
-      const start = ex.indexOf("{");
-      const end = ex.lastIndexOf("}");
-      const json = ex.slice(start, end + 1);
-      expect(() => JSON.parse(json), `${id} JSON غير صالح`).not.toThrow();
+      const objs = extractJSONObjects(ex);
+      expect(objs.length, `${id} بلا JSON`).toBeGreaterThan(0);
+      for (const o of objs) {
+        expect(() => JSON.parse(o), `${id} JSON غير صالح: ${o.slice(0, 40)}`).not.toThrow();
+      }
     }
   });
 
-  it("مثال المخاطر يستخدم مستوى صالح", () => {
-    const start = EXAMPLES.risks.indexOf("{");
-    const obj = JSON.parse(EXAMPLES.risks.slice(start));
-    expect(["red", "yellow", "green"]).toContain(obj.level);
+  it("الوكلاء المميّزون (مخاطر/مخفي/سوق/مستقبل) لهم مثالان (خطِر + آمن)", () => {
+    for (const id of ["risks", "hidden", "market", "future"]) {
+      expect(extractJSONObjects(EXAMPLES[id]).length, id).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("مثال المخاطر يحوي مستوى خطِر ومستوى آمن", () => {
+    const levels = extractJSONObjects(EXAMPLES.risks).map((o) => JSON.parse(o).level);
+    expect(levels).toContain("red");
+    expect(levels).toContain("green");
   });
 });
