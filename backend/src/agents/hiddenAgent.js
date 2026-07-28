@@ -6,6 +6,7 @@
 
 import { askJSON } from "../lib/llm.js";
 import { referencesText } from "../references/index.js";
+import { hiddenExample } from "../references/examples.js";
 
 export const id = "hidden";
 export const name = "كاشف المخفي";
@@ -47,7 +48,7 @@ export async function run({ contractKey, text, sample }) {
   const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `${refs}\n\nنصّ العقد:\n\n${text}\n\nاكشف البنود المخفية مستنداً للمراجع أعلاه، وأخرج JSON فقط.`,
+    user: `${refs}\n\n${hiddenExample}\n\nنصّ العقد:\n\n${text}\n\nاكشف البنود المخفية مستنداً للمراجع أعلاه، وأخرج JSON فقط.`,
     maxTokens: 1800,
   });
 

@@ -7,6 +7,7 @@
 
 import { askJSON } from "../lib/llm.js";
 import { referencesText } from "../references/index.js";
+import { objectionExample } from "../references/examples.js";
 
 export const id = "object";
 export const name = "وكيل الاعتراض";
@@ -65,7 +66,7 @@ export async function run({ contractKey, text, sample, risks, hiddenItems, finan
   const ai = await askJSON({
     system: SYSTEM,
     user:
-      `${refs}\n\n` +
+      `${refs}\n\n${objectionExample}\n\n` +
       `نصّ العقد:\n\n${text}\n\n` +
       `المشكلات التي رصدها الوكلاء الآخرون:\n${brief}\n\n` +
       `اكتب رسالة اعتراض لكل مشكلة، واستشهد في كل رسالة بالجهة التنظيمية المناسبة من المراجع أعلاه (مثل: وفق حد ساما / اشتراط ترخيص هيئة السوق المالية). أخرج JSON فقط.`,

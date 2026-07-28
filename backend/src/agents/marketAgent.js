@@ -6,6 +6,7 @@
 
 import { askJSON } from "../lib/llm.js";
 import { referencesText } from "../references/index.js";
+import { marketExample } from "../references/examples.js";
 
 export const id = "market";
 export const name = "مقارنة السوق";
@@ -49,7 +50,7 @@ export async function run({ contractKey, text, sample }) {
   const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `${refs}\n\nنصّ العقد:\n\nقارن بنوده بالمراجع التنظيمية أعلاه والسوق السعودي، واجعل عمود «السوق» مستنداً للأنظمة الموثّقة. نصّ العقد:\n${text}\n\nأخرج JSON فقط.`,
+    user: `${refs}\n\n${marketExample}\n\nقارن بنود العقد بالمراجع التنظيمية أعلاه والسوق السعودي، واجعل عمود «السوق» مستنداً للأنظمة الموثّقة. نصّ العقد:\n${text}\n\nأخرج JSON فقط.`,
     maxTokens: 1800,
   });
 

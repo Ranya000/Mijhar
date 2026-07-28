@@ -6,6 +6,7 @@
 
 import { askJSON } from "../lib/llm.js";
 import { referencesText } from "../references/index.js";
+import { futureExample } from "../references/examples.js";
 
 export const id = "future";
 export const name = "النظرة المستقبلية";
@@ -49,7 +50,7 @@ export async function run({ contractKey, text, sample }) {
   const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `${refs}\n\nنصّ العقد:\n\n${text}\n\nابنِ الخطّ الزمني المستقبلي مستنداً للمراجع أعلاه، وأخرج JSON فقط.`,
+    user: `${refs}\n\n${futureExample}\n\nنصّ العقد:\n\n${text}\n\nابنِ الخطّ الزمني المستقبلي مستنداً للمراجع أعلاه، وأخرج JSON فقط.`,
     maxTokens: 1800,
   });
 

@@ -6,6 +6,7 @@
 
 import { askJSON } from "../lib/llm.js";
 import { referencesText } from "../references/index.js";
+import { risksExample } from "../references/examples.js";
 
 export const id = "risks";
 export const name = "كاشف المخاطر";
@@ -48,7 +49,7 @@ export async function run({ contractKey, text, sample }) {
   const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `${refs}\n\nنصّ العقد:\n\n${text}\n\nحلّل المخاطر مقارناً بالمراجع أعلاه، وأخرج JSON فقط.`,
+    user: `${refs}\n\n${risksExample}\n\nنصّ العقد:\n\n${text}\n\nحلّل المخاطر مقارناً بالمراجع أعلاه، وأخرج JSON فقط.`,
     maxTokens: 2000,
   });
 
