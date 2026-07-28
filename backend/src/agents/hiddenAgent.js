@@ -5,6 +5,7 @@
 // ============================================================
 
 import { askJSON } from "../lib/llm.js";
+import { referencesText } from "../references/index.js";
 
 export const id = "hidden";
 export const name = "كاشف المخفي";
@@ -42,10 +43,11 @@ function sanitize(items) {
  * @param {object} ctx.sample  بيانات النوع النموذجية (للاحتياط)
  * @returns {Promise<{hiddenItems: Array, source: "ai"|"fallback"}>}
  */
-export async function run({ text, sample }) {
+export async function run({ contractKey, text, sample }) {
+  const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `نصّ العقد:\n\n${text}\n\nاكشف البنود المخفية وأخرج JSON فقط.`,
+    user: `${refs}\n\nنصّ العقد:\n\n${text}\n\nاكشف البنود المخفية مستنداً للمراجع أعلاه، وأخرج JSON فقط.`,
     maxTokens: 1800,
   });
 

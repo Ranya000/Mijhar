@@ -5,6 +5,7 @@
 // ============================================================
 
 import { askJSON } from "../lib/llm.js";
+import { referencesText } from "../references/index.js";
 
 export const id = "market";
 export const name = "مقارنة السوق";
@@ -44,10 +45,11 @@ function sanitize(rows) {
  * @param {object} ctx.sample  بيانات النوع النموذجية (للاحتياط)
  * @returns {Promise<{marketComparison: Array, source: "ai"|"fallback"}>}
  */
-export async function run({ text, sample }) {
+export async function run({ contractKey, text, sample }) {
+  const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `نصّ العقد:\n\n${text}\n\nقارن بنوده بالسوق السعودي وأخرج JSON فقط.`,
+    user: `${refs}\n\nنصّ العقد:\n\nقارن بنوده بالمراجع التنظيمية أعلاه والسوق السعودي، واجعل عمود «السوق» مستنداً للأنظمة الموثّقة. نصّ العقد:\n${text}\n\nأخرج JSON فقط.`,
     maxTokens: 1800,
   });
 

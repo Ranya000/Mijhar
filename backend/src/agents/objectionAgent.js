@@ -6,6 +6,7 @@
 // ============================================================
 
 import { askJSON } from "../lib/llm.js";
+import { referencesText } from "../references/index.js";
 
 export const id = "object";
 export const name = "وكيل الاعتراض";
@@ -57,15 +58,17 @@ function buildIssuesBrief({ risks, hiddenItems, financial }) {
  * @param {object} ctx.financial     مخرجات وكيل الأثر المالي
  * @returns {Promise<{objectionLetters: Array, source: "ai"|"fallback"}>}
  */
-export async function run({ text, sample, risks, hiddenItems, financial }) {
+export async function run({ contractKey, text, sample, risks, hiddenItems, financial }) {
   const brief = buildIssuesBrief({ risks, hiddenItems, financial });
+  const refs = referencesText(contractKey);
 
   const ai = await askJSON({
     system: SYSTEM,
     user:
+      `${refs}\n\n` +
       `نصّ العقد:\n\n${text}\n\n` +
       `المشكلات التي رصدها الوكلاء الآخرون:\n${brief}\n\n` +
-      `اكتب رسالة اعتراض لكل مشكلة وأخرج JSON فقط.`,
+      `اكتب رسالة اعتراض لكل مشكلة، واستشهد في كل رسالة بالجهة التنظيمية المناسبة من المراجع أعلاه (مثل: وفق حد ساما / اشتراط ترخيص هيئة السوق المالية). أخرج JSON فقط.`,
     maxTokens: 2600,
   });
 

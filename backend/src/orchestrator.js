@@ -72,7 +72,7 @@ export async function analyzeContract({ contractType, text, financial }) {
 
   // ----- وكيل الاعتراض (يعتمد على مخرجات الوكلاء أعلاه) -----
   const objectionOut = await objectionAgent.run({
-    text, sample,
+    contractKey, text, sample,
     risks: risksOut.risks,
     hiddenItems,
     financial: fin,

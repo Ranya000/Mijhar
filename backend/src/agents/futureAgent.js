@@ -5,6 +5,7 @@
 // ============================================================
 
 import { askJSON } from "../lib/llm.js";
+import { referencesText } from "../references/index.js";
 
 export const id = "future";
 export const name = "النظرة المستقبلية";
@@ -44,10 +45,11 @@ function sanitize(items) {
  * @param {object} ctx.sample  بيانات النوع النموذجية (للاحتياط)
  * @returns {Promise<{futureTimeline: Array, source: "ai"|"fallback"}>}
  */
-export async function run({ text, sample }) {
+export async function run({ contractKey, text, sample }) {
+  const refs = referencesText(contractKey);
   const ai = await askJSON({
     system: SYSTEM,
-    user: `نصّ العقد:\n\n${text}\n\nابنِ الخطّ الزمني المستقبلي وأخرج JSON فقط.`,
+    user: `${refs}\n\nنصّ العقد:\n\n${text}\n\nابنِ الخطّ الزمني المستقبلي مستنداً للمراجع أعلاه، وأخرج JSON فقط.`,
     maxTokens: 1800,
   });
 
