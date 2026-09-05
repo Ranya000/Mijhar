@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>ظِلّ — الوكيل الحارس للذكاء الاصطناعي</title>
+    <meta name="description" content="ظِلّ وكيل حارس يقف بين المستخدم والذكاء الاصطناعي: يحاكي أي قرار مهم قبل تنفيذه، يكشف الخطر سواء كان غلطة من الذكاء أو اختراقاً وخداعاً، ويقترح بديلاً آمناً يحقق نفس الهدف." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      html, body, #root { margin: 0; padding: 0; min-height: 100%; background: #07080C; }
+      #boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+        background: #07080C;
+        background-image: radial-gradient(ellipse 70% 45% at 50% 34%, rgba(20,224,192,0.16), transparent 62%);
+        font-family: Tajawal, system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center;
+      }
+      #boot .logo {
+        width: 76px; height: 76px; border-radius: 22px; position: relative;
+        background: linear-gradient(135deg, #12D8B8, #22B8FF);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 12px 44px rgba(20,224,192,0.45); animation: bootPulse 1.7s ease-in-out infinite;
+      }
+      #boot .t { color: #fff; font-weight: 800; font-size: 18px; }
+      #boot .s { color: rgba(255,255,255,0.45); font-size: 13px; margin-top: -10px; }
+      #boot .ring {
+        width: 36px; height: 36px; border-radius: 50%;
+        border: 3px solid rgba(255,255,255,0.12); border-top-color: #35E9CE;
+        animation: bootSpin .9s linear infinite;
+      }
+      @keyframes bootSpin { to { transform: rotate(360deg); } }
+      @keyframes bootPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      @media (prefers-reduced-motion: reduce) { #boot .logo, #boot .ring { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot">
+        <div class="logo">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V5l7-3z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M9 12l2 2 4-4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="t">جارٍ تشغيل الوكيل الحارس…</div>
+        <div class="s">لحظات ويجهز الظل</div>
+        <div class="ring"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
