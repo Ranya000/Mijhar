@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="color-scheme" content="light only">
-  <meta name="supported-color-schemes" content="light only">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>تحديث بشأن طلب انضمامك لبرنامج InterMission</title>
   <!--[if mso]>
   <style type="text/css">
@@ -13,129 +13,161 @@
   </style>
   <![endif]-->
   <style type="text/css">
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
     body { margin:0 !important; padding:0 !important; width:100% !important; }
     table { border-collapse:collapse !important; }
     img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
     a { text-decoration:none; }
+
+    /* ===== الوضع الداكن (يتبع جهاز المستلم) ===== */
+    @media (prefers-color-scheme: dark) {
+      .body-bg      { background:#0b0206 !important; }
+      .card         { background:#17090f !important; box-shadow:0 10px 40px rgba(0,0,0,0.6) !important; }
+      .t-primary    { color:#ffffff !important; }
+      .t-body       { color:#dcccd3 !important; }
+      .t-muted      { color:#9a8890 !important; }
+      .lockup-text  { color:#ffffff !important; }
+      .lockup-sub   { color:#e6dbe0 !important; }
+      .slash        { background:#ffffff !important; }
+      .rule         { background:#3a2630 !important; }
+      .vrule        { background:#3a2630 !important; }
+      .note-card    { background:#22111a !important; border-color:#3a2028 !important; }
+      .sig-border   { border-color:#3a2028 !important; }
+    }
+    /* ===== دعم داكن Outlook.com ===== */
+    [data-ogsc] .body-bg     { background:#0b0206 !important; }
+    [data-ogsc] .card        { background:#17090f !important; }
+    [data-ogsc] .t-primary   { color:#ffffff !important; }
+    [data-ogsc] .t-body      { color:#dcccd3 !important; }
+    [data-ogsc] .t-muted     { color:#9a8890 !important; }
+    [data-ogsc] .lockup-text { color:#ffffff !important; }
+    [data-ogsc] .lockup-sub  { color:#e6dbe0 !important; }
+    [data-ogsc] .slash       { background:#ffffff !important; }
+    [data-ogsc] .rule        { background:#3a2630 !important; }
+    [data-ogsc] .vrule       { background:#3a2630 !important; }
+    [data-ogsc] .note-card   { background:#22111a !important; border-color:#3a2028 !important; }
+    [data-ogsc] .sig-border  { border-color:#3a2028 !important; }
+
     @media only screen and (max-width:600px){
       .container { width:100% !important; }
-      .px { padding-left:22px !important; padding-right:22px !important; }
-      .h1 { font-size:23px !important; line-height:1.4 !important; }
+      .px { padding-left:24px !important; padding-right:24px !important; }
+      .h1 { font-size:22px !important; line-height:1.45 !important; }
     }
   </style>
 </head>
-<body style="margin:0; padding:0; background-color:#140309; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
+<body class="body-bg" style="margin:0; padding:0; background-color:#f2eef0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
 
   <!-- نص المعاينة المخفي -->
-  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#140309;">
-    تحديث بخصوص طلبك في InterMission — نشكر لك اهتمامك ووقتك، ونتطلع لمشاركتك القادمة.
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#f2eef0;">
+    تحديث بشأن طلب انضمامك لبرنامج InterMission — نشكر لك اهتمامك ووقتك.
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#140309;">
+  <table role="presentation" class="body-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2eef0;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
+      <td align="center" style="padding:30px 16px;">
 
-        <!-- البطاقة -->
-        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.45);">
+        <!-- ================= البطاقة ================= -->
+        <table role="presentation" class="container card" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(90,20,45,0.18);">
 
-          <!-- الرأس -->
+          <!-- شريط علوي بلون الهوية -->
           <tr>
-            <td align="center" style="background-color:#3a0a18; background-image:linear-gradient(135deg,#2a0711 0%,#5c1329 55%,#7a1a3a 100%); padding:38px 30px 30px 30px;">
+            <td style="height:6px; background-color:#d6336c; background-image:linear-gradient(90deg,#7a1a3a,#d6336c,#f06aa8); font-size:0; line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- ======== لوقو النادي + InterMission ======== -->
+          <tr>
+            <td align="center" style="padding:32px 30px 6px 30px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
                 <tr>
-                  <td style="font-family:Tahoma,Arial,sans-serif; font-size:30px; font-weight:bold; color:#ffffff; letter-spacing:0.5px;" dir="ltr">
-                    Inter<span style="color:#ffffff;">M</span><span style="color:#f06aa8;">i</span>ssion
+                  <td valign="middle" dir="ltr" style="padding-left:14px;">
+                    <span class="slash" style="display:inline-block; width:9px; height:30px; background-color:#5c1329; border-radius:1px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
+                    <span class="slash" style="display:inline-block; width:9px; height:30px; background-color:#5c1329; border-radius:1px; margin-right:5px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
+                    <span class="slash" style="display:inline-block; width:9px; height:30px; background-color:#5c1329; border-radius:1px; margin-right:5px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
+                  </td>
+                  <td class="vrule" width="1" style="width:1px; background-color:#d9c3cd; font-size:0; line-height:0;">&nbsp;</td>
+                  <td valign="middle" dir="ltr" style="padding-right:14px; text-align:left;">
+                    <span class="lockup-sub" style="font-family:Arial,Helvetica,sans-serif; font-size:10px; font-weight:bold; letter-spacing:1.5px; line-height:1.5; color:#5c1329;">
+                      MANAGEMENT<br>INFORMATION<br>SYSTEM CLUB
+                    </span>
                   </td>
                 </tr>
               </table>
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-top:12px;">
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:16px 0 14px 0;">
                 <tr>
-                  <td style="width:26px; height:5px; background-color:#e23a86; border-radius:3px; font-size:0; line-height:0;">&nbsp;</td>
-                  <td style="width:8px; font-size:0; line-height:0;">&nbsp;</td>
-                  <td style="width:14px; height:5px; background-color:#f06aa8; border-radius:3px; font-size:0; line-height:0;">&nbsp;</td>
+                  <td class="rule" width="220" style="width:220px; height:1px; background-color:#e2d3da; font-size:0; line-height:0;">&nbsp;</td>
                 </tr>
               </table>
-              <p style="margin:16px 0 0 0; font-family:Tahoma,Arial,sans-serif; font-size:13px; color:#e9c9d5; letter-spacing:1px;">
-                نادي نظم المعلومات الإدارية · الجاهزية لسوق العمل
-              </p>
-            </td>
-          </tr>
 
-          <!-- الشارة العلوية -->
-          <tr>
-            <td class="px" align="center" style="padding:30px 40px 0 40px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:5px;">
                 <tr>
-                  <td style="background-color:#f3eef1; border-radius:999px; padding:8px 18px; font-family:Tahoma,Arial,sans-serif; font-size:13px; font-weight:bold; color:#6b4a58;">
-                    ✨ تحديث بشأن طلبك
-                  </td>
+                  <td style="width:16px; height:5px; background-color:#e23a86; border-radius:2px; font-size:0; line-height:0;">&nbsp;</td>
+                  <td style="width:6px; font-size:0; line-height:0;">&nbsp;</td>
+                  <td style="width:16px; height:5px; background-color:#f06aa8; border-radius:2px; font-size:0; line-height:0;">&nbsp;</td>
                 </tr>
               </table>
-            </td>
-          </tr>
 
-          <!-- العنوان -->
-          <tr>
-            <td class="px" align="center" style="padding:18px 40px 0 40px;">
-              <h1 class="h1" style="margin:0; font-family:Tahoma,Arial,sans-serif; font-size:26px; line-height:1.45; font-weight:bold; color:#2a0711;">
-                تحديث بشأن طلب انضمامك لبرنامج <span style="color:#b81e5b;">InterMission</span>
-              </h1>
-            </td>
-          </tr>
-
-          <!-- نص الرسالة -->
-          <tr>
-            <td class="px" align="right" style="padding:22px 44px 8px 44px; font-family:Tahoma,Arial,sans-serif; font-size:16px; line-height:2; color:#3d3d42;">
-              <p style="margin:0 0 16px 0;">مرحباً <strong style="color:#2a0711;">[اسم المتقدم]</strong>،</p>
-              <p style="margin:0 0 16px 0;">
-                نشكر اهتمامك ووقتك في التقديم على برنامج <strong>InterMission</strong>.
-              </p>
-              <p style="margin:0 0 16px 0;">
-                نظراً لمحدودية المقاعد والإقبال الكبير، نعتذر عن عدم قبولك في هذه النسخة.
-                مقدّرين لك شغفك وسعة إمكانياتك، ونسعد دائماً بمشاركتك في مبادراتنا وفعالياتنا القادمة.
-              </p>
-              <p style="margin:0;">
-                نتمنى لك كل التوفيق والنجاح! 🌱
-              </p>
-            </td>
-          </tr>
-
-          <!-- بطاقة "ابقَ على تواصل" -->
-          <tr>
-            <td class="px" style="padding:20px 44px 4px 44px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf5f7; border:1px solid #f0dde5; border-radius:14px;">
-                <tr>
-                  <td align="center" style="padding:22px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.8; color:#3d3d42;">
-                    تابعنا لتصلك أخبار الفعاليات والفرص القادمة، ونتطلّع لرؤيتك معنا قريباً.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- التوقيع -->
-          <tr>
-            <td class="px" align="right" style="padding:24px 44px 30px 44px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.8; color:#3d3d42;">
-              <div style="border-top:1px solid #eee2e7; padding-top:20px;">
-                مع التحية،<br>
-                <strong style="color:#2a0711;">فريق نادي نظم المعلومات الإدارية</strong><br>
-                <span style="color:#b81e5b;">مشروع InterMission</span>
+              <div class="lockup-text" dir="ltr" style="font-family:Tahoma,Arial,sans-serif; font-size:30px; font-weight:bold; letter-spacing:0.3px; color:#2a0711;">
+                InterM<span style="color:#d6336c;">i</span>ssion
               </div>
             </td>
           </tr>
 
-        </table>
-        <!-- نهاية البطاقة -->
-
-        <!-- التذييل -->
-        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+          <!-- ======== العنوان الرئيسي ======== -->
           <tr>
-            <td align="center" style="padding:22px 30px 8px 30px; font-family:Tahoma,Arial,sans-serif; font-size:12px; line-height:1.7; color:#8a7a80;">
-              وصلتك هذه الرسالة لأنك تقدّمت لبرنامج InterMission.<br>
-              © 2026 نادي نظم المعلومات الإدارية — جميع الحقوق محفوظة.
+            <td class="px" align="center" style="padding:26px 44px 0 44px;">
+              <h1 class="h1 t-primary" style="margin:0; font-family:Tahoma,Arial,sans-serif; font-size:25px; line-height:1.5; font-weight:bold; color:#2a0711;">
+                تحديث بشأن طلب انضمامك لبرنامج <span style="color:#d6336c;">InterMission</span> ✨
+              </h1>
             </td>
           </tr>
+
+          <!-- ======== نص الرسالة (كما هو) ======== -->
+          <tr>
+            <td class="px t-body" align="center" style="padding:22px 46px 8px 46px; font-family:Tahoma,Arial,sans-serif; font-size:16px; line-height:2; color:#3d3d42;">
+              <p style="margin:0 0 16px 0;">مرحباً <strong class="t-primary" style="color:#2a0711;">[اسم المتقدم]</strong>،</p>
+              <p style="margin:0 0 16px 0;">
+                نشكر اهتمامك ووقتك في التقديم على برنامج InterMission.
+              </p>
+              <p style="margin:0 0 16px 0;">
+                نظراً لمحدودية المقاعد والإقبال الكبير، نعتذر عن عدم قبولك في هذه النسخة. مقدرين لك شغفك وسعة إمكانياتك، ونسعد دائماً بمشاركتك في مبادراتنا وفعالياتنا القادمة.
+              </p>
+              <p style="margin:0;">
+                نتمنى لك كل التوفيق والنجاح!
+              </p>
+            </td>
+          </tr>
+
+          <!-- التوقيع (كما هو) -->
+          <tr>
+            <td class="px t-body" align="center" style="padding:26px 46px 34px 46px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.9; color:#3d3d42;">
+              <div class="sig-border" style="border-top:1px solid #eee2e7; padding-top:22px;">
+                مع التحية، فريق نادي نظم المعلومات الإدارية<br>
+                <span style="color:#d6336c; font-weight:bold;">مشروع InterMission</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- تذييل بلوقو صغير -->
+          <tr>
+            <td align="center" style="background-color:#3a0a18; background-image:linear-gradient(135deg,#2a0711,#5c1329,#7a1a3a); padding:22px 30px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                <tr>
+                  <td valign="middle" dir="ltr" style="padding-left:12px;">
+                    <span style="display:inline-block; width:7px; height:22px; background-color:#ffffff; border-radius:1px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
+                    <span style="display:inline-block; width:7px; height:22px; background-color:#ffffff; border-radius:1px; margin-right:4px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
+                    <span style="display:inline-block; width:7px; height:22px; background-color:#ffffff; border-radius:1px; margin-right:4px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
+                  </td>
+                  <td valign="middle" dir="ltr" style="font-family:Tahoma,Arial,sans-serif; font-size:17px; font-weight:bold; color:#ffffff;">
+                    InterM<span style="color:#f06aa8;">i</span>ssion
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
         </table>
+        <!-- ================= نهاية البطاقة ================= -->
 
       </td>
     </tr>
