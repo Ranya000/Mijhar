@@ -21,32 +21,20 @@
 
     /* ===== الوضع الداكن (يتبع جهاز المستلم) ===== */
     @media (prefers-color-scheme: dark) {
-      .body-bg      { background:#0b0206 !important; }
-      .card         { background:#17090f !important; box-shadow:0 10px 40px rgba(0,0,0,0.6) !important; }
-      .t-primary    { color:#ffffff !important; }
-      .t-body       { color:#dcccd3 !important; }
-      .t-muted      { color:#9a8890 !important; }
-      .lockup-text  { color:#ffffff !important; }
-      .lockup-sub   { color:#e6dbe0 !important; }
-      .slash        { background:#ffffff !important; }
-      .rule         { background:#3a2630 !important; }
-      .vrule        { background:#3a2630 !important; }
-      .step-card    { background:#22111a !important; border-color:#3a2028 !important; }
-      .sig-border   { border-color:#3a2028 !important; }
+      .body-bg    { background:#0b0206 !important; }
+      .card       { background:#17090f !important; box-shadow:0 10px 40px rgba(0,0,0,0.6) !important; }
+      .t-primary  { color:#ffffff !important; }
+      .t-body     { color:#dcccd3 !important; }
+      .step-card  { background:#22111a !important; }
+      .sig-border { border-color:#3a2028 !important; }
     }
     /* ===== دعم داكن Outlook.com ===== */
-    [data-ogsc] .body-bg     { background:#0b0206 !important; }
-    [data-ogsc] .card        { background:#17090f !important; }
-    [data-ogsc] .t-primary   { color:#ffffff !important; }
-    [data-ogsc] .t-body      { color:#dcccd3 !important; }
-    [data-ogsc] .t-muted     { color:#9a8890 !important; }
-    [data-ogsc] .lockup-text { color:#ffffff !important; }
-    [data-ogsc] .lockup-sub  { color:#e6dbe0 !important; }
-    [data-ogsc] .slash       { background:#ffffff !important; }
-    [data-ogsc] .rule        { background:#3a2630 !important; }
-    [data-ogsc] .vrule       { background:#3a2630 !important; }
-    [data-ogsc] .step-card   { background:#22111a !important; border-color:#3a2028 !important; }
-    [data-ogsc] .sig-border  { border-color:#3a2028 !important; }
+    [data-ogsc] .body-bg    { background:#0b0206 !important; }
+    [data-ogsc] .card       { background:#17090f !important; }
+    [data-ogsc] .t-primary  { color:#ffffff !important; }
+    [data-ogsc] .t-body     { color:#dcccd3 !important; }
+    [data-ogsc] .step-card  { background:#22111a !important; }
+    [data-ogsc] .sig-border { border-color:#3a2028 !important; }
 
     @media only screen and (max-width:600px){
       .container { width:100% !important; }
@@ -59,7 +47,7 @@
 
   <!-- نص المعاينة المخفي -->
   <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#f2eef0;">
-    تهانينا! تم قبولك في برنامج InterMission — إليك خطواتك القادمة.
+    تهانينا! تم قبولك في برنامج InterMission — إليك تعليمات الانضمام.
   </div>
 
   <table role="presentation" class="body-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2eef0;">
@@ -74,55 +62,16 @@
             <td style="height:6px; background-color:#d6336c; background-image:linear-gradient(90deg,#7a1a3a,#d6336c,#f06aa8); font-size:0; line-height:0;">&nbsp;</td>
           </tr>
 
-          <!-- ======== لوقو النادي + InterMission (نفس ترتيب الصورة) ======== -->
+          <!-- ======== لوقو النادي (بانر) ======== -->
           <tr>
-            <td align="center" style="padding:32px 30px 6px 30px;">
-              <!-- السطر العلوي: الشرطات الثلاث | نص النادي -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
-                <tr>
-                  <!-- الشرطات الثلاث -->
-                  <td valign="middle" dir="ltr" style="padding-left:14px;">
-                    <span class="slash" style="display:inline-block; width:9px; height:30px; background-color:#5c1329; border-radius:1px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
-                    <span class="slash" style="display:inline-block; width:9px; height:30px; background-color:#5c1329; border-radius:1px; margin-right:5px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
-                    <span class="slash" style="display:inline-block; width:9px; height:30px; background-color:#5c1329; border-radius:1px; margin-right:5px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
-                  </td>
-                  <!-- فاصل عمودي -->
-                  <td class="vrule" width="1" style="width:1px; background-color:#d9c3cd; font-size:0; line-height:0;">&nbsp;</td>
-                  <!-- نص النادي -->
-                  <td valign="middle" dir="ltr" style="padding-right:14px; text-align:left;">
-                    <span class="lockup-sub" style="font-family:Arial,Helvetica,sans-serif; font-size:10px; font-weight:bold; letter-spacing:1.5px; line-height:1.5; color:#5c1329;">
-                      MANAGEMENT<br>INFORMATION<br>SYSTEM CLUB
-                    </span>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- خط أفقي فاصل -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:16px 0 14px 0;">
-                <tr>
-                  <td class="rule" width="220" style="width:220px; height:1px; background-color:#e2d3da; font-size:0; line-height:0;">&nbsp;</td>
-                </tr>
-              </table>
-
-              <!-- بلوكات ماجنتا صغيرة فوق InterMission -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:5px;">
-                <tr>
-                  <td style="width:16px; height:5px; background-color:#e23a86; border-radius:2px; font-size:0; line-height:0;">&nbsp;</td>
-                  <td style="width:6px; font-size:0; line-height:0;">&nbsp;</td>
-                  <td style="width:16px; height:5px; background-color:#f06aa8; border-radius:2px; font-size:0; line-height:0;">&nbsp;</td>
-                </tr>
-              </table>
-
-              <!-- كلمة InterMission -->
-              <div class="lockup-text" dir="ltr" style="font-family:Tahoma,Arial,sans-serif; font-size:30px; font-weight:bold; letter-spacing:0.3px; color:#2a0711;">
-                InterM<span style="color:#d6336c;">i</span>ssion
-              </div>
+            <td align="center" bgcolor="#2a0711" style="background-color:#2a0711; padding:0; font-size:0; line-height:0;">
+              <img src="LOGO_URL" width="600" alt="InterMission — نادي نظم المعلومات الإدارية" style="display:block; width:100%; max-width:600px; height:auto; border:0;">
             </td>
           </tr>
 
           <!-- ======== العنوان الرئيسي ======== -->
           <tr>
-            <td class="px" align="center" style="padding:26px 44px 0 44px;">
+            <td class="px" align="center" style="padding:30px 44px 0 44px;">
               <h1 class="h1 t-primary" style="margin:0; font-family:Tahoma,Arial,sans-serif; font-size:26px; line-height:1.45; font-weight:bold; color:#2a0711;">
                 تهانينا! تم قبولك في برنامج <span style="color:#d6336c;">InterMission</span> 🎉
               </h1>
@@ -139,12 +88,12 @@
             </td>
           </tr>
 
-          <!-- الخطوات القادمة -->
+          <!-- تعليمات الانضمام -->
           <tr>
             <td class="px" style="padding:22px 46px 6px 46px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="step-card" style="background-color:#faf5f7; border:1px solid #f0dde5; border-radius:24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="step-card" style="background-color:#faf5f7; border-radius:24px;">
                 <tr>
-                  <td class="t-primary" align="right" style="padding:20px 24px 4px 24px; font-family:Tahoma,Arial,sans-serif; font-size:16px; font-weight:bold; color:#2a0711;">
+                  <td class="t-primary" align="right" style="padding:22px 24px 6px 24px; font-family:Tahoma,Arial,sans-serif; font-size:16px; font-weight:bold; color:#2a0711;">
                     تعليمات الانضمام:
                   </td>
                 </tr>
@@ -157,9 +106,7 @@
                         <td width="30" valign="top">
                           <div style="width:24px; height:24px; background-color:#d6336c; border-radius:50%; text-align:center; line-height:24px; font-family:Tahoma,Arial,sans-serif; font-size:13px; font-weight:bold; color:#ffffff;">1</div>
                         </td>
-                        <td valign="top" class="t-body" style="padding-right:12px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.7; color:#3d3d42;">
-                          يرجى تأكيد الانضمام عبر <a href="[الرابط]" style="color:#d6336c; font-weight:bold;">[الرابط]</a> خلال 24 ساعة.
-                        </td>
+                        <td valign="top" class="t-body" style="padding-right:12px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.7; color:#3d3d42;">&nbsp;</td>
                       </tr>
                     </table>
                   </td>
@@ -173,9 +120,7 @@
                         <td width="30" valign="top">
                           <div style="width:24px; height:24px; background-color:#d6336c; border-radius:50%; text-align:center; line-height:24px; font-family:Tahoma,Arial,sans-serif; font-size:13px; font-weight:bold; color:#ffffff;">2</div>
                         </td>
-                        <td valign="top" class="t-body" style="padding-right:12px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.7; color:#3d3d42;">
-                          انضم لقناة التحديثات والتعليمات اللوجستية عبر <a href="[الرابط]" style="color:#d6336c; font-weight:bold;">[الرابط]</a>.
-                        </td>
+                        <td valign="top" class="t-body" style="padding-right:12px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.7; color:#3d3d42;">&nbsp;</td>
                       </tr>
                     </table>
                   </td>
@@ -183,15 +128,13 @@
 
                 <!-- 3 -->
                 <tr>
-                  <td style="padding:8px 24px 20px 24px;">
+                  <td style="padding:8px 24px 22px 24px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl">
                       <tr>
                         <td width="30" valign="top">
                           <div style="width:24px; height:24px; background-color:#d6336c; border-radius:50%; text-align:center; line-height:24px; font-family:Tahoma,Arial,sans-serif; font-size:13px; font-weight:bold; color:#ffffff;">3</div>
                         </td>
-                        <td valign="top" class="t-body" style="padding-right:12px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.7; color:#3d3d42;">
-                          ننتظرك يوم [اليوم] الموافق [التاريخ] الساعة [الوقت].
-                        </td>
+                        <td valign="top" class="t-body" style="padding-right:12px; font-family:Tahoma,Arial,sans-serif; font-size:15px; line-height:1.7; color:#3d3d42;">&nbsp;</td>
                       </tr>
                     </table>
                   </td>
@@ -213,18 +156,9 @@
           <!-- تذييل بلوقو صغير -->
           <tr>
             <td align="center" style="background-color:#3a0a18; background-image:linear-gradient(135deg,#2a0711,#5c1329,#7a1a3a); padding:22px 30px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
-                <tr>
-                  <td valign="middle" dir="ltr" style="padding-left:12px;">
-                    <span style="display:inline-block; width:7px; height:22px; background-color:#ffffff; border-radius:1px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
-                    <span style="display:inline-block; width:7px; height:22px; background-color:#ffffff; border-radius:1px; margin-right:4px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
-                    <span style="display:inline-block; width:7px; height:22px; background-color:#ffffff; border-radius:1px; margin-right:4px; -webkit-transform:skewX(-20deg); transform:skewX(-20deg);">&nbsp;</span>
-                  </td>
-                  <td valign="middle" dir="ltr" style="font-family:Tahoma,Arial,sans-serif; font-size:17px; font-weight:bold; color:#ffffff;">
-                    InterM<span style="color:#f06aa8;">i</span>ssion
-                  </td>
-                </tr>
-              </table>
+              <div dir="ltr" style="font-family:Tahoma,Arial,sans-serif; font-size:17px; font-weight:bold; color:#ffffff;">
+                InterM<span style="color:#f06aa8;">i</span>ssion
+              </div>
             </td>
           </tr>
 
